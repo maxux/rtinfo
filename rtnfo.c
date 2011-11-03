@@ -3,45 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
-/*
-#include <sys/ioctl.h>
-#include <termios.h>
-*/
-
-#define MEMORY_FILE	"/proc/meminfo"
-#define CPU_FILE	"/proc/stat"
-#define NET_FILE	"/proc/net/dev"
-
-#define INTERVAL	2000	/* Millisecondes */
-
-/* struct winsize ws; */
-
-typedef struct {
-	/* CPU */
-	unsigned char *cpu_usage;
-	double *cpu_total_now;
-	double *cpu_idle_now;
-	double *cpu_total_old;
-	double *cpu_idle_old;
-
-	/* Network */
-	char **ifname;
-	double *if_download_now;
-	double *if_upload_now;
-	double *if_download_last;
-	double *if_upload_last;
-
-	size_t *download_rate;
-	size_t *upload_rate;
-
-	/* RAM */
-	size_t memory_total;
-	size_t memory_used;
-	size_t swap_total;
-	size_t swap_free;
-
-} sysrt_t;
-
+#include "rtnfo.h"
 
 char * SkipSpace(char *ptr, short nb) {
 	short i;
@@ -404,7 +366,7 @@ void ShowData(sysrt_t *sys) {
 
 }
 
-int main(int argc, const char *argv[]) {
+int main(void) {
 	sysrt_t system;
 	unsigned char nb, i;
 

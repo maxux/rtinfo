@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# Value: c / c++
+PROJECT_TYPE="c"
+
+# Setting project name
+PROJECT_NAME="rtinfo"
+
+##########################################################################
+# Autodefined variables
+if [ "$PROJECT_TYPE" == "c" ]; then
+	TRY_COMPILER="gcc"
+	CODE_EXTENSION="c"
+	HEADER_EXTENSION="h"
+	
+elif [ "$PROJECT_TYPE" == "c++" ]; then
+	TRY_COMPILER="g++"
+	CODE_EXTENSION="cxx"
+	HEADER_EXTENSION="hxx"
+else
+	echo "Invalid project type"
+	exit 1
+fi
+
+# List of defined files
+# $ cat *.c *.h | grep '#include <' | cut -d '<' -f 2 | cut -d '>' -f 1 | sort | uniq | xargs
+HEADERS=($(cat *.${CODE_EXTENSION} *.${HEADER_EXTENSION} | grep '#include <' | cut -d '<' -f 2 | cut -d '>' -f 1 | sort | uniq | xargs))
+
+# Core Variables
+TMP_FILE_IN="/tmp/compilz-configure.c"
+TMP_FILE_OUT="/tmp/compilz-configure.bin"
+
+# Checking Main Part
+echo -n "Checking for valid compiler... "
+
+	COMPILER=$($TRY_COMPILER -v 2>&1 | grep Target | cut -d' ' -f 2)
+
+	if [ "$COMPILER" == "" ]; then
+		COMPILER=$($TRY_COMPILER -v 2>&1)
+			
+		if [ $? == 0 ]; then
+			COMPILER="$TRY_COMPILER"
+			echo "$COMPILER (warning: no host found)"
+		else
+			echo "error: cannot find $TRY_COMPILER"
+			exit 1
+		fi
+	else
+		COMPILER="$COMPILER-$TRY_COMPILER"
+		echo $COMPILER
+	fi
+
+
+echo "Checking headers files..."
+
+	for ((i = 0; i < ${#HEADERS[@]}; i += 1)); do
+		echo -n "Checking ${HEADERS[$i]}... "
+		
+		echo "#include <${HEADERS[$i]}>" > $TMP_FILE_IN
+		echo "int main(void){return 0;}" >> $TMP_FILE_IN
+		
+		$($COMPILER $TMP_FILE_IN -o $TMP_FILE_OUT)
+		
+		if [ $? == 0 ]; then
+			echo "found."
+		else
+			echo "not found."
+			exit 1
+		fi
+	done
+
+rm $TMP_FILE_IN $TMP_FILE_OUT 2> /dev/null
+
+echo "Creating Makefile..."
+sed "s/__COMPILER__/${COMPILER}/;s/__PROJECT_NAME__/${PROJECT_NAME}/;s/__CODE_EXTENSION__/${CODE_EXTENSION}/;s/__HEADER_EXTENSION__/${HEADER_EXTENSION}/" < Makefile.in > Makefile
