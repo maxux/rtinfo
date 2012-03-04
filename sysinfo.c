@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <stdint.h>
 #include "misc.h"
 #include "sysinfo.h"
 
@@ -93,8 +94,12 @@ info_cpu_t * mkinfo_cpu_usage(info_cpu_t *cpu, int nbcpu) {
 	int i;
 	
 	/* CPU Usage: 100 * (delta cpu time - delta idle time) / delta cpu time */
-	for(i = 0; i < nbcpu; i++)
-		cpu[i].usage = 100 * ((cpu[i].current.time_total - cpu[i].previous.time_total) - (cpu[i].current.time_idle - cpu[i].previous.time_idle)) / (cpu[i].current.time_total - cpu[i].previous.time_total);
+	for(i = 0; i < nbcpu; i++) {
+		if(cpu[i].current.time_total != cpu[i].previous.time_total)
+			cpu[i].usage = 100 * ((cpu[i].current.time_total - cpu[i].previous.time_total) - (cpu[i].current.time_idle - cpu[i].previous.time_idle)) / (cpu[i].current.time_total - cpu[i].previous.time_total);
+			
+		else cpu[i].usage = 0;
+	}
 		
 	return cpu;
 }

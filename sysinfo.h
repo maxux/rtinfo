@@ -12,10 +12,12 @@
 	#define NET_FILE	"/proc/net/dev"
 	#define BATTERY_PATH	"/sys/class/power_supply/" BATTERY_NAME
 	
+	#include <stdint.h>
+	
 	/* CPU Structures */
 	typedef struct info_cpu_node_t {
-		long long time_total;			/* Total CPU Time */
-		long long time_idle;			/* Idle CPU Time */
+		uint64_t time_total;			/* Total CPU Time */
+		uint64_t time_idle;			/* Idle CPU Time */
 		
 	} info_cpu_node_t;
 	
@@ -30,10 +32,10 @@
 	
 	/* Memory (RAM/SWAP) Structure */
 	typedef struct info_memory_t {
-		unsigned long long ram_total;		/* RAM Total (in kB) */
-		unsigned long long ram_used;		/* RAM Used [aka -/+ buffers/cache] (in kB) */
-		unsigned long long swap_total;		/* SWAP Total (in kB) */
-		unsigned long long swap_free;		/* SWAP Free (in kB) */
+		uint64_t ram_total;		/* RAM Total (in kB) */
+		uint64_t ram_used;		/* RAM Used [aka -/+ buffers/cache] (in kB) */
+		uint64_t swap_total;		/* SWAP Total (in kB) */
+		uint64_t swap_free;		/* SWAP Free (in kB) */
 		
 	} info_memory_t;
 	
@@ -54,8 +56,8 @@
 	} info_battery_status_t;
 	
 	typedef struct info_battery_t {
-		long charge_full;	/* Battery full charge value (dependent unit) */
-		long charge_now;	/* Battery current charge value (dependent unit) */
+		uint32_t charge_full;	/* Battery full charge value (dependent unit) */
+		uint32_t charge_now;	/* Battery current charge value (dependent unit) */
 		char load;		/* Battery current load (in percent) */
 		
 		enum info_battery_status_t status;	/* Battery current status */
@@ -64,8 +66,8 @@
 	
 	/* Network Structures */
 	typedef struct info_network_node_t {
-		unsigned long long up;		/* Bytes transmitted by interface */
-		unsigned long long down;	/* Bytes received by interface */
+		uint64_t up;		/* Bytes transmitted by interface */
+		uint64_t down;		/* Bytes received by interface */
 		
 	} info_network_node_t;
 	
@@ -73,8 +75,8 @@
 		char *name;		/* Interface name */
 		struct info_network_node_t current;	/* Number of bytes transfered over the interface */
 		struct info_network_node_t previous;	/* Copy of previous bytes transfered over the interface */
-		unsigned long up_rate;		/* Upload rate (in ko/s) */
-		unsigned long down_rate;	/* Download rate (in ko/s) */
+		int up_rate;		/* Upload rate (in ko/s) */
+		int down_rate;		/* Download rate (in ko/s) */
 		
 	} info_network_t;
 
