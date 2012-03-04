@@ -4,6 +4,11 @@
 #include <string.h>
 #include "misc.h"
 
+void diep(char *str) {
+	perror(str);
+	exit(1);
+}
+
 long long sum_line(char *line) {
 	long long sum = 0;
 	short i = 0;
