@@ -25,8 +25,8 @@
 	/*       'nbcpu' will always be (real numbers of cpu) + 1 for the sum */
 	typedef struct info_cpu_t {
 		unsigned char usage;			/* CPU Usage (in percent) */
-		struct info_cpu_node_t current;		/* Instant time values */
-		struct info_cpu_node_t previous;	/* Previous time values */
+		struct info_cpu_node_t current	__attribute__ ((packed));	/* Instant time values */
+		struct info_cpu_node_t previous	__attribute__ ((packed));	/* Previous time values */
 		
 	} info_cpu_t;
 	
