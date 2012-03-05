@@ -107,6 +107,8 @@ int networkside(char *server, int port) {
 			
 			net.net[i].up_rate   = truenet[i].up_rate;
 			net.net[i].down_rate = truenet[i].down_rate;
+			
+			strcpy(net.net[i].ip, truenet[i].ip);
 		}
 		
 		netinfo_send(sockfd, &net, sizeof(netinfo_packed_net_t), &remote);

@@ -11,22 +11,21 @@
 #include "server.h"
 #include "display.h"
 
+extern int nbclients;
+
 void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t *client) {
 	int i;
 	float memory_percent, swap_percent;
 	
-	move((client->line) ? client->line - 1 : client->line, 0);
+	move(client->id + 2, 0);
 	
 	attrset(COLOR_PAIR(1));
 	
-	/* Print Hostname */
-	if(client->line > 0)
-		printw(" | \n");
-		
-	printw(" +------ %s (%s)\n", packed->hostname, inet_ntoa(remote->sin_addr));
+	packed->hostname[14] = '\0';
+	printw(" %-14s", packed->hostname);
 	
 	/* Print CPU Usage */
-	printw(" |- CPU: ");
+	printw(" | ");
 	
 	for(i = 1; i < packed->nbcpu; i++) {
 		if(packed->cpu[i].usage > 85)
@@ -39,12 +38,12 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 		attrset(COLOR_PAIR(1));	
 	}
 	
-	/* if(packed->nbcpu < 4)
+	if(packed->nbcpu < 4)
 		for(; i < 5; i++)
-			printw("     "); */
+			printw("     ");
 	
 	/* Print Memory Usage */
-	printw("\n |- RAM: ");
+	printw(" | ");
 	memory_percent = ((float) packed->memory.ram_used / packed->memory.ram_total) * 100;
 	
 	if(memory_percent > 80)
@@ -56,7 +55,7 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 	printw("%5lld Mo (%2.0f%%)", packed->memory.ram_used / 1024, memory_percent);
 	attrset(COLOR_PAIR(1));
 	
-	printw(" | SWAP: ");
+	printw(" | ");
 	if(packed->memory.swap_total > 0) {
 		swap_percent = ((float) (packed->memory.swap_total - packed->memory.swap_free) / packed->memory.swap_total) * 100;
 		
@@ -75,25 +74,35 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 	attrset(COLOR_PAIR(1));
 	
 	/* Print Load Average Usage */
-	printw(" | Load: ");
+	printw(" | ");
 	
 	if(packed->loadavg.min_1 > 1)
 		attrset(A_BOLD | COLOR_PAIR(3));
 	
-	else if(packed->loadavg.min_1 > 0.1)
-		attrset(COLOR_PAIR(2));
+	else if(packed->loadavg.min_1 > 0.4)
+		attrset(A_BOLD | COLOR_PAIR(2));
 	
-	printw("%.2f ", packed->loadavg.min_1);
+	printw("% 2.2f ", packed->loadavg.min_1);
 	
 	
 	if(packed->loadavg.min_5 > 1)
 		attrset(A_BOLD | COLOR_PAIR(3));
 	
-	else if(packed->loadavg.min_5 > 0.1)
-		attrset(COLOR_PAIR(2));
+	else if(packed->loadavg.min_5 > 0.5)
+		attrset(A_BOLD | COLOR_PAIR(2));
 	
-	printw("%.2f", packed->loadavg.min_5);
+	printw("% 2.2f ", packed->loadavg.min_5);
+	
+	if(packed->loadavg.min_15 > 1)
+		attrset(A_BOLD | COLOR_PAIR(3));
+	
+	else if(packed->loadavg.min_15 > 0.5)
+		attrset(A_BOLD | COLOR_PAIR(2));
+	
+	printw("% 2.2f", packed->loadavg.min_15);
 	attrset(COLOR_PAIR(1));
+	
+	printw(" | %s", inet_ntoa(remote->sin_addr));
 	
 	/* printw(" | " BATTERY_NAME ": %c%d%%", battery_picto[battery.status], battery.load); */
 	
@@ -107,27 +116,10 @@ void show_packet_network(netinfo_packed_net_t *net, struct sockaddr_in *remote, 
 	int i;
 	
 	remote = NULL;
+	move(nbclients + 5 + client->line, 0);
 	
-	move(client->line + 3, 0);
-	
-	printw(" | \n");
 	for(i = 0; i < net->nbiface; i++) {
-		printw(" |-- %-6s: ", net->net[i].name);
-		
-		if(net->net[i].up_rate > 20000)
-			attrset(A_BOLD | COLOR_PAIR(4));
-			
-		else if(net->net[i].up_rate > 1250)
-			attrset(A_BOLD | COLOR_PAIR(3));
-		
-		else if(net->net[i].up_rate > 100)
-			attrset(A_BOLD | COLOR_PAIR(6));
-		
-		else if(net->net[i].down_rate > 2)
-			attrset(COLOR_PAIR(2));
-		
-		printw("% 8d ko/s", net->net[i].up_rate);
-		
+		printw(" %-14s | %-12s |", client->name, net->net[i].name);
 		
 		if(net->net[i].down_rate > 20000)
 			attrset(A_BOLD | COLOR_PAIR(4));
@@ -139,11 +131,35 @@ void show_packet_network(netinfo_packed_net_t *net, struct sockaddr_in *remote, 
 			attrset(A_BOLD | COLOR_PAIR(6));
 		
 		else if(net->net[i].down_rate > 2)
-			attrset(COLOR_PAIR(2));
+			attrset(A_BOLD | COLOR_PAIR(2));
 		
-		printw("% 8d ko/s\n", net->net[i].down_rate);
+		else attrset(A_BOLD | COLOR_PAIR(5));
+		
+		printw(" % 15d ko/s", net->net[i].down_rate);
 		attrset(COLOR_PAIR(1));
+		
+		printw(" |");
+		if(net->net[i].up_rate > 20000)
+			attrset(A_BOLD | COLOR_PAIR(4));
+			
+		else if(net->net[i].up_rate > 1250)
+			attrset(A_BOLD | COLOR_PAIR(3));
+		
+		else if(net->net[i].up_rate > 100)
+			attrset(A_BOLD | COLOR_PAIR(6));
+		
+		else if(net->net[i].down_rate > 2)
+			attrset(A_BOLD | COLOR_PAIR(2));
+		
+		else attrset(A_BOLD | COLOR_PAIR(5));
+		
+		printw(" % 15d ko/s", net->net[i].up_rate);
+		attrset(COLOR_PAIR(1));
+		
+		printw(" | %s\n", net->net[i].ip);
 	}
+	
+	// printw("----------------+--------------+------------------------+------------------------");
 	
 	refresh();
 }

@@ -41,7 +41,7 @@ client_t * stack_search(char *name) {
 	
 	temp = clients;
 	while(temp && strcmp(temp->name, name)) {
-		line += temp->nbiface + 5;
+		line += temp->nbiface;
 		temp = temp->next;
 	}
 	

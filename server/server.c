@@ -15,6 +15,7 @@
 #include "stack.h"
 
 client_t *clients = NULL;
+int nbclients = 0;
 
 void diep(char *str) {
 	perror(str);
@@ -77,7 +78,8 @@ int main(int argc, char *argv[]) {
 	if(bind(sockfd, (struct sockaddr*) &si_me, sizeof(si_me)) == -1)
 		diep("bind");
 	
-	printw("Waiting client...");
+	printw(" Hostname       | CPU Usage            | RAM            | SWAP         | Load Avg.         | Remote IP \n");
+	printw("----------------+----------------------+----------------+--------------+-------------------+-------------------\n\n");
 	refresh();
 	
 	while(1) {
@@ -109,6 +111,13 @@ int main(int argc, char *argv[]) {
 				fprintf(stderr, "Stacking client failed\n");
 				return 1;
 			}
+			
+			nbclients++;
+			
+			move(nbclients + 2, 0);
+			printw("\n Hostname       | Interface    | Download Rate        | Upload rate          | Interface Address\n");
+			printw("----------------+--------------+----------------------+----------------------+----------------------");
+			refresh();
 		}
 		
 		time(&client->last);

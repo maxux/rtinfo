@@ -77,6 +77,7 @@
 		struct info_network_node_t previous;	/* Copy of previous bytes transfered over the interface */
 		int up_rate;		/* Upload rate (in ko/s) */
 		int down_rate;		/* Download rate (in ko/s) */
+		char ip[16];		/* IP Address in char */
 		
 	} info_network_t;
 
@@ -86,6 +87,7 @@
 		struct info_network_node_t previous;	/* Copy of previous bytes transfered over the interface */
 		int up_rate;		/* Upload rate (in ko/s) */
 		int down_rate;		/* Download rate (in ko/s) */
+		char ip[16];		/* IP Address in char */
 		
 	} info_network_legacy_t;
 
@@ -107,6 +109,7 @@
 	/* Initialize Network structure (required to use network) */
 	info_network_t * mkinfo_network_usage(info_network_t *net, int nbiface, int timewait);
 	info_network_t * getinfo_network(info_network_t *net, int nbiface);
+	info_network_t * getinfo_ipv4(info_network_t *net, int nbiface);
 	info_network_t * initinfo_network(int *nbiface);
 	
 	/* Return a (struct tm) pointer to the current local time */

@@ -4,8 +4,16 @@
 #include <ctype.h>
 #include <time.h>
 #include <stdint.h>
+#include <stropts.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <linux/netdevice.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <unistd.h>
 #include "misc.h"
 #include "sysinfo.h"
+
 
 /*
  *	CPU
@@ -332,6 +340,47 @@ info_network_t * getinfo_network(info_network_t *net, int nbiface) {
 
 	fclose(fp);
 	
+	getinfo_ipv4(net, nbiface);
+	
+	return net;
+}
+
+info_network_t * getinfo_ipv4(info_network_t *net, int nbiface) {
+	int sockfd;
+	struct ifconf ifconf;
+	struct ifreq ifr[50];
+	int ifs;
+	int i, j;
+	char ip[INET_ADDRSTRLEN];
+	struct sockaddr_in *s_in;
+
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if(sockfd < 0)
+		diep("socket");
+
+	ifconf.ifc_buf = (char *) ifr;
+	ifconf.ifc_len = sizeof(ifr);
+
+	if(ioctl(sockfd, SIOCGIFCONF, &ifconf) == -1)
+		diep("ioctl");
+
+	ifs = ifconf.ifc_len / sizeof(ifr[0]);
+	for(i = 0; i < ifs; i++) {
+		s_in = (struct sockaddr_in *) &ifr[i].ifr_addr;
+
+		if(!inet_ntop(AF_INET, &s_in->sin_addr, ip, sizeof(ip)))
+			diep("inet_ntop");
+
+		for(j = 0; j < nbiface; j++) {
+			if(!strcmp(ifr[i].ifr_name, net[j].name)) {
+				strcpy(net[j].ip, ip);
+				break;
+			}
+		}
+	}
+	
+	close(sockfd);
+
 	return net;
 }
 
@@ -342,6 +391,12 @@ info_network_t * mkinfo_network_usage(info_network_t *net, int nbiface, int time
 	for(i = 0; i < nbiface; i++) {
 		net[i].down_rate = ((net[i].current.down - net[i].previous.down) / (timewait / 1000) / 1024);
 		net[i].up_rate   = ((net[i].current.up - net[i].previous.up) / (timewait / 1000)) / 1024;
+		
+		if(net[i].down_rate < 0)
+			net[i].down_rate = 0;
+		
+		if(net[i].up_rate < 0)
+			net[i].up_rate = 0;
 	}
 
 	return net;
