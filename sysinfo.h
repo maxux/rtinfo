@@ -80,6 +80,15 @@
 		
 	} info_network_t;
 
+	typedef struct info_network_legacy_t {
+		char name[32];		/* Interface name */
+		struct info_network_node_t current;	/* Number of bytes transfered over the interface */
+		struct info_network_node_t previous;	/* Copy of previous bytes transfered over the interface */
+		int up_rate;		/* Upload rate (in ko/s) */
+		int down_rate;		/* Download rate (in ko/s) */
+		
+	} info_network_legacy_t;
+
 	/* Functions prototypes */
 	/* Initialize CPU structure (required to use CPU) */
 	info_cpu_t * initinfo_cpu(int *nbcpu);

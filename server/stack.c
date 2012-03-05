@@ -37,11 +37,17 @@ client_t * unstack_client(client_t *remove) {
 
 client_t * stack_search(char *name) {
 	client_t *temp;
+	int line = 0;
 	
 	temp = clients;
-	while(temp && strcmp(temp->name, name))
+	while(temp && strcmp(temp->name, name)) {
+		line += temp->nbiface + 5;
 		temp = temp->next;
+	}
 	
+	if(temp)
+		temp->line = line;
+		
 	return temp;
 }
 
@@ -53,10 +59,15 @@ void stack_ping() {
 	
 	while(temp) {
 		if(t - 30 > temp->last) {
-			move(temp->id, 0);
+			move((temp->line) ? temp->line - 1 : temp->line, 0);
+			
+			if(temp->line > 0)
+				printw(" | \n");
+			
 			clrtoeol();
 			attrset(A_BOLD | COLOR_PAIR(4));
-			printw(" %-10s | Ping timeout", temp->name);
+			
+			printw(" +------ %s: Ping timeout", temp->name);
 			attrset(COLOR_PAIR(1));	
 		}
 		

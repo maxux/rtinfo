@@ -85,6 +85,3 @@ char * getinterfacename(char *line) {
 	
 	return name;
 }
-
-
-

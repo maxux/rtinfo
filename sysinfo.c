@@ -341,7 +341,7 @@ info_network_t * mkinfo_network_usage(info_network_t *net, int nbiface, int time
 	/* Network Usage: (current load - previous load) / timewait (milli sec) */
 	for(i = 0; i < nbiface; i++) {
 		net[i].down_rate = ((net[i].current.down - net[i].previous.down) / (timewait / 1000) / 1024);
-		net[i].up_rate   = ((net[i].current.up - net[i].previous.up) / (timewait / 1000));
+		net[i].up_rate   = ((net[i].current.up - net[i].previous.up) / (timewait / 1000)) / 1024;
 	}
 
 	return net;

@@ -28,10 +28,10 @@ int netinfo_socket(char *server, int port, struct sockaddr_in *remote) {
 	return sockfd;
 }
 
-int netinfo_send(int sockfd, netinfo_packed_t *packed, const struct sockaddr_in *remote) {
+int netinfo_send(int sockfd, void *packed, size_t size, const struct sockaddr_in *remote) {
 	/* printf("Sending packet: %d\n", sizeof(netinfo_packed_t)); */
 		
-	if(sendto(sockfd, packed, sizeof(netinfo_packed_t), 0, (const struct sockaddr *) remote, sizeof(struct sockaddr_in)) == -1)
+	if(sendto(sockfd, packed, size, 0, (const struct sockaddr *) remote, sizeof(struct sockaddr_in)) == -1)
 		diep("sendto()");
 
 	return 0;

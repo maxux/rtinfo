@@ -26,7 +26,7 @@ int localside() {
 	while(1) {	
 		/* Pre-reading data */
 		getinfo_cpu(cpu, nbcpu);
-		/* getinfo_network(net, nbiface); */
+		getinfo_network(net, nbiface);
 
 		/* Sleeping */
 		usleep(UPDATE_INTERVAL);
@@ -36,8 +36,8 @@ int localside() {
 		mkinfo_cpu_usage(cpu, nbcpu);
 		
 		/* Reading Network */
-		/* getinfo_network(net, nbiface);
-		mkinfo_network_usage(net, nbiface, UPDATE_INTERVAL / 1000); */
+		getinfo_network(net, nbiface);
+		mkinfo_network_usage(net, nbiface, UPDATE_INTERVAL / 1000);
 		
 		/* Reading Memory */
 		if(!getinfo_memory(&memory))
@@ -70,7 +70,7 @@ int localside() {
 		
 		/* printf(" | NET: ");
 		for(i = 0; i < nbiface; i++)
-			printf("[%s] %ld ko/s - %ld ko/s ", net[i].name, net[i].up_rate, net[i].down_rate); */
+			printf("[%s] % 8d ko/s - % 8d ko/s ", net[i].name, net[i].up_rate, net[i].down_rate); */
 		
 		printf("| RAM: ");
 		if(((float) memory.ram_used / memory.ram_total) * 100 > 80)

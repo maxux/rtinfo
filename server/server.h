@@ -2,11 +2,15 @@
 	#define __SERVER_H
 	
 	#include <time.h>
+	
+	#define BUFFER_SIZE	1024
 
 	typedef struct client_t {
 		int id;
 		char name[32];
 		time_t last;
+		int nbiface;
+		int line;
 		
 		struct client_t *next;
 		

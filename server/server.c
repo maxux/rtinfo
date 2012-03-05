@@ -23,16 +23,25 @@ void diep(char *str) {
 
 void dummy(int signal) {
 	switch(signal) {
-		// 
+		case SIGINT:
+			endwin();
+			exit(0);
+		break;
 	}
 }
 
-int main(void) {
-	struct sockaddr_in si_me, remote;
-	int sockfd, cid = 2;
+int main(int argc, char *argv[]) {
+	struct sockaddr_in si_me, remote;	/* Socket */
+	int sockfd, cid = 0, port;		/* Clients */
 	size_t slen = sizeof(remote);
-	netinfo_packed_t packed;
+	void *buffer = malloc(sizeof(char) * BUFFER_SIZE);	/* Data */
 	client_t *client;
+	
+	/* Init Port */
+	if(argc > 1)
+		port = atoi(argv[1]);
+		
+	else port = DEFAULT_PORT;
 	
 	/* Init Console */
 	initscr();		/* Init ncurses */
@@ -46,10 +55,12 @@ int main(void) {
 	init_pair(3, COLOR_YELLOW, COLOR_BLACK);
 	init_pair(4, COLOR_RED,    COLOR_BLACK);
 	init_pair(5, COLOR_BLACK,  COLOR_BLACK);
+	init_pair(6, COLOR_CYAN,   COLOR_BLACK);
 	
 	attrset(COLOR_PAIR(1));
 	
 	/* Skipping Resize Signal */
+	signal(SIGINT, dummy);
 	signal(SIGWINCH, dummy);
 	
 	/* printw("%d %d %d %d %d = %d\n", sizeof(netinfo_options_t), sizeof(info_memory_t), sizeof(info_loadagv_t), sizeof(info_battery_t), sizeof(uint64_t), sizeof(netinfo_packed_t)); */
@@ -60,38 +71,38 @@ int main(void) {
 	memset((char *) &si_me, 0, sizeof(si_me));
 	
 	si_me.sin_family = AF_INET;
-	si_me.sin_port = htons(DEFAULT_PORT);
+	si_me.sin_port = htons(port);
 	si_me.sin_addr.s_addr = htonl(INADDR_ANY);
 	
 	if(bind(sockfd, (struct sockaddr*) &si_me, sizeof(si_me)) == -1)
 		diep("bind");
 	
-	/* Print Header */
-	printw(" Hostname   | CPU Usage            | RAM            | SWAP         | Load Avg. | Remote IP \n");
-	printw("------------+----------------------+----------------+--------------+-----------+-------------------");
+	printw("Waiting client...");
 	refresh();
-
+	
 	while(1) {
-		if(recvfrom(sockfd, &packed, sizeof(packed), 0, (struct sockaddr *) &remote, &slen) == -1)
+		if(recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *) &remote, &slen) == -1)
 			diep("recvfrom()");
 		
-		if(packed.options & QRY_SOCKET) {
-			/* printw("New client: %d\n", clients); */
+		if(((netinfo_packed_t*) buffer)->options & QRY_SOCKET) {
+			/* printw("New client: %d | %s\n", cid, ((netinfo_packed_t*) buffer)->hostname); */
 			
-			packed.options  = ACK_SOCKET;
-			packed.clientid = cid;
+			((netinfo_packed_t*) buffer)->options  = ACK_SOCKET;
+			((netinfo_packed_t*) buffer)->clientid = cid;
 			
-			if(sendto(sockfd, &packed, sizeof(netinfo_packed_t), 0, (const struct sockaddr *) &remote, sizeof(struct sockaddr_in)) == -1)
+			if(sendto(sockfd, buffer, sizeof(netinfo_packed_t), 0, (const struct sockaddr *) &remote, sizeof(struct sockaddr_in)) == -1)
 				diep("sendto");
 				
 			continue;
 		}
 		
-		if(!(client = stack_search(packed.hostname))) {
+		if(!(client = stack_search(((netinfo_packed_t*) buffer)->hostname))) {
 			client = (client_t*) malloc(sizeof(client_t));
 			
-			client->id   = cid++;
-			strncpy(client->name, packed.hostname, sizeof(client->name));
+			client->id      = cid++;
+			client->nbiface = 0;
+			
+			strncpy(client->name, ((netinfo_packed_t*) buffer)->hostname, sizeof(client->name));
 			client->name[sizeof(client->name) - 1] = '\0';
 			
 			if(!stack_client(client)) {
@@ -101,9 +112,12 @@ int main(void) {
 		}
 		
 		time(&client->last);
+		
+		if(((netinfo_packed_t*) buffer)->options & USE_NETWORK)	{
+			client->nbiface = ((netinfo_packed_net_t*) buffer)->nbiface;
+			show_packet_network((netinfo_packed_net_t*) buffer, &remote, client);
 
-		/* Print client */
-		show_packet(&packed, &remote, client);
+		} else show_packet((netinfo_packed_t*) buffer, &remote, client);
 		
 		/* Check list */
 		stack_ping();
