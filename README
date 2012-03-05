@@ -1,0 +1,39 @@
+librtinfo / rtinfo / rtinfo-server
+==================================
+
+	librtinfo is a very small library (~400 lines of C) for parsing linux system health
+	rtinfo is able to monitor locally or remotly via udp
+	rtinfo-server is a ncurses based ui displaying rtinfo-remote informations
+
+Requirement
+===========
+
+	librtinfo just require some linux headers
+	rtinfo require librtinfo
+	rtinfo-server require libncurses
+
+How to use it
+=============
+
+	The easy way is to type `make` on the rtinfo's root directory
+	If you want to compile only a specific part of the project, you can make each folder alone
+	
+	There is no `make install` function at this time
+	
+	
+	To use rtinfo, just launch rtinfo/rtinfo, without any arguments, it will display health locally
+	If you want to connect rtinfo to a server, just put the server ip on first argument:
+		$ ./rtinfo 127.0.0.1 [port optional]
+	
+	To start the server, just start it, or with a specific port on the first argument
+		$ ./server [port optional]
+	
+	
+	Warning: there is no encryption for the udp packet, if you are on a dangerous network, please concidere to
+	         use it over ssh tunnel or a encrypted vpn. There is (at this time) no security check made on the server.
+
+Bug ?
+=====
+
+	If you found a bug or have any suggestion, please send me patch/message/anything else to
+		root@maxux.net
