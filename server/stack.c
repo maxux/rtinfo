@@ -9,6 +9,7 @@
 #include "stack.h"
 
 extern client_t *clients;
+extern int nbclients;
 
 client_t * stack_client(client_t *new) {
 	new->next = clients;
@@ -54,20 +55,26 @@ client_t * stack_search(char *name) {
 void stack_ping() {
 	client_t *temp = clients;
 	time_t t;
+	int i;
 	
 	time(&t);
 	
 	while(temp) {
 		if(t - 30 > temp->last) {
-			move((temp->line) ? temp->line - 1 : temp->line, 0);
-			
-			if(temp->line > 0)
-				printw(" | \n");
+			move(temp->id + 2, 0);
 			
 			clrtoeol();
 			attrset(A_BOLD | COLOR_PAIR(4));
 			
-			printw(" +------ %s: Ping timeout", temp->name);
+			printw(" %-14s | Ping timeout", temp->name);
+			
+			move(nbclients + 5 + temp->line, 0);
+	
+			for(i = 0; i < temp->nbiface; i++) {
+				printw(" %-14s", temp->name);
+				move(nbclients + 5 + temp->line + i + 1, 0);
+			}
+				
 			attrset(COLOR_PAIR(1));	
 		}
 		
