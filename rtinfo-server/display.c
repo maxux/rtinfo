@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <ncurses.h>
-#include "../socket.h"
+#include "../rtinfo/socket.h"
 #include "server.h"
 #include "display.h"
 
@@ -27,7 +27,7 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 	/* Print CPU Usage */
 	printw(" | ");
 	
-	for(i = 1; i < packed->nbcpu; i++) {
+	for(i = 0; i < packed->nbcpu; i++) {
 		if(packed->cpu[i].usage > 85)
 			attrset(A_BOLD | COLOR_PAIR(4));
 			
@@ -35,7 +35,10 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 			attrset(A_BOLD | COLOR_PAIR(3));
 			
 		printw("%3d%% ", packed->cpu[i].usage);
-		attrset(COLOR_PAIR(1));	
+		attrset(COLOR_PAIR(1));
+		
+		if(i == 0)
+			printw(" | ");
 	}
 	
 	if(packed->nbcpu < 4)
@@ -113,12 +116,18 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 }
 
 void show_packet_network(netinfo_packed_net_t *net, struct sockaddr_in *remote, client_t *client) {
-	int i;
+	int i, reduce = 0;
 	
 	remote = NULL;
 	move(nbclients + 5 + client->line, 0);
 	
 	for(i = 0; i < net->nbiface; i++) {
+		/* Hide Interfaces without ip and hide loopback interface */
+		if(!*(net->net[i].ip) || !strncmp(net->net[i].ip, "127.0.0.1", 9)) {
+			reduce++;
+			continue;
+		}
+			
 		printw(" %-14s | %-12s |", client->name, net->net[i].name);
 		
 		if(net->net[i].down_rate > 20000)
@@ -148,7 +157,7 @@ void show_packet_network(netinfo_packed_net_t *net, struct sockaddr_in *remote, 
 		else if(net->net[i].up_rate > 100)
 			attrset(A_BOLD | COLOR_PAIR(6));
 		
-		else if(net->net[i].down_rate > 2)
+		else if(net->net[i].up_rate > 2)
 			attrset(A_BOLD | COLOR_PAIR(2));
 		
 		else attrset(A_BOLD | COLOR_PAIR(5));
@@ -156,10 +165,19 @@ void show_packet_network(netinfo_packed_net_t *net, struct sockaddr_in *remote, 
 		printw(" % 15d ko/s", net->net[i].up_rate);
 		attrset(COLOR_PAIR(1));
 		
-		printw(" | %s\n", net->net[i].ip);
+		/* Print IP */
+		printw(" | ");
+		
+		/* Highlight public address */
+		if(strncmp(net->net[i].ip, "10.", 3) && strncmp(net->net[i].ip, "172.16.", 7) && strncmp(net->net[i].ip, "192.168.", 7))
+			attrset(A_BOLD | COLOR_PAIR(7));
+			
+		printw("%s\n", net->net[i].ip);
+		attrset(COLOR_PAIR(1));
 	}
 	
-	// printw("----------------+--------------+------------------------+------------------------");
+	client->nbiface -= reduce;
+	printw("----------------+--------------+----------------------+----------------------+----------------------");
 	
 	refresh();
 }

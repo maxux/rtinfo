@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <ncurses.h>
-#include "../socket.h"
+#include "../rtinfo/socket.h"
 #include "server.h"
 #include "stack.h"
 

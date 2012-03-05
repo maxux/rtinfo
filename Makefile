@@ -1,25 +1,13 @@
-include config.mk
-
-SRC=$(wildcard *.c)
-OBJ=$(SRC:.c=.o)
-
-all: options $(EXEC)
-
-options: config.mk
-	@echo $(EXEC) build options:
-	@echo "CFLAGS   = $(CFLAGS)"
-	@echo "LDFLAGS  = $(LDFLAGS)"
-	@echo "CC       = $(CC)"
-
-$(EXEC): $(OBJ)
-	$(CC) -o $@ $^ $(LDFLAGS)
-
-%.o: %.c
-	$(CC) -o $@ -c $< $(CFLAGS)
+all:
+	cd librtinfo && $(MAKE)
+	cd rtinfo && $(MAKE)
+	cd rtinfo-server && $(MAKE)
 
 clean:
-	rm -fv *.o
+	cd librtinfo && $(MAKE) clean
+	cd rtinfo && $(MAKE) clean
+	cd rtinfo-server && $(MAKE) clean
 
 mrproper: clean
-	rm -fv $(EXEC)
-
+	cd rtinfo && $(MAKE) mrproper
+	cd rtinfo-server && $(MAKE) mrproper

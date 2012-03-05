@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
-#include "sysinfo.h"
-#include "misc.h"
+#include "../librtinfo/sysinfo.h"
+#include "../librtinfo/misc.h"
 #include "rtinfo-local.h"
 
 int localside() {

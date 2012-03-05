@@ -7,7 +7,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include "socket.h"
-#include "misc.h"
+#include "../librtinfo/misc.h"
 
 int netinfo_socket(char *server, int port, struct sockaddr_in *remote) {
 	int sockfd;

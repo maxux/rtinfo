@@ -1,7 +1,7 @@
 #ifndef __RTSOCKET_H
 	#define __RTSOCKET_H
 	
-	#include "sysinfo.h"
+	#include "../librtinfo/sysinfo.h"
 	#include <netinet/in.h>
 	
 	#define DEFAULT_PORT	9930

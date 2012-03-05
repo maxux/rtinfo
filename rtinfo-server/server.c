@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <ncurses.h>
 #include <signal.h>
-#include "../socket.h"
+#include "../rtinfo/socket.h"
 #include "server.h"
 #include "display.h"
 #include "stack.h"
@@ -57,6 +57,7 @@ int main(int argc, char *argv[]) {
 	init_pair(4, COLOR_RED,    COLOR_BLACK);
 	init_pair(5, COLOR_BLACK,  COLOR_BLACK);
 	init_pair(6, COLOR_CYAN,   COLOR_BLACK);
+	init_pair(7, COLOR_GREEN,  COLOR_BLACK);
 	
 	attrset(COLOR_PAIR(1));
 	
@@ -78,8 +79,8 @@ int main(int argc, char *argv[]) {
 	if(bind(sockfd, (struct sockaddr*) &si_me, sizeof(si_me)) == -1)
 		diep("bind");
 	
-	printw(" Hostname       | CPU Usage            | RAM            | SWAP         | Load Avg.         | Remote IP \n");
-	printw("----------------+----------------------+----------------+--------------+-------------------+-------------------\n\n");
+	printw(" Hostname       | CPU Usage                    | RAM            | SWAP         | Load Avg.         | Remote IP \n");
+	printw("----------------+-------+----------------------+----------------+--------------+-------------------+-------------------\n\n");
 	refresh();
 	
 	while(1) {
@@ -102,7 +103,7 @@ int main(int argc, char *argv[]) {
 			client = (client_t*) malloc(sizeof(client_t));
 			
 			client->id      = cid++;
-			client->nbiface = 0;
+			client->nbiface = 1;
 			
 			strncpy(client->name, ((netinfo_packed_t*) buffer)->hostname, sizeof(client->name));
 			client->name[sizeof(client->name) - 1] = '\0';
@@ -123,7 +124,7 @@ int main(int argc, char *argv[]) {
 		time(&client->last);
 		
 		if(((netinfo_packed_t*) buffer)->options & USE_NETWORK)	{
-			client->nbiface = ((netinfo_packed_net_t*) buffer)->nbiface;
+			client->nbiface = ((netinfo_packed_net_t*) buffer)->nbiface + 1;
 			show_packet_network((netinfo_packed_net_t*) buffer, &remote, client);
 
 		} else show_packet((netinfo_packed_t*) buffer, &remote, client);

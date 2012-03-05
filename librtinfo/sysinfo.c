@@ -365,6 +365,11 @@ info_network_t * getinfo_ipv4(info_network_t *net, int nbiface) {
 		diep("ioctl");
 
 	ifs = ifconf.ifc_len / sizeof(ifr[0]);
+	
+	/* Reset IP */
+	for(j = 0; j < nbiface; j++)
+		*(net[j].ip) = '\0';
+				
 	for(i = 0; i < ifs; i++) {
 		s_in = (struct sockaddr_in *) &ifr[i].ifr_addr;
 

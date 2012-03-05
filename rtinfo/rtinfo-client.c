@@ -4,8 +4,8 @@
 #include <string.h>
 #include <time.h>
 #include <netinet/in.h>
-#include "sysinfo.h"
-#include "misc.h"
+#include "../librtinfo/sysinfo.h"
+#include "../librtinfo/misc.h"
 #include "socket.h"
 #include "rtinfo-client.h"
 
