@@ -178,9 +178,9 @@ info_loadagv_t * getinfo_loadavg(info_loadagv_t *load) {
 	char data[32];
 
 	/* Init Load */
-	load->min_1  = -1;
-	load->min_5  = -1;
-	load->min_15 = -15;
+	load->load[0] = -1;
+	load->load[1] = -1;
+	load->load[2] = -1;
 	
 	if(!file_get(LOADAVG_FILE, data, sizeof(data)))
 		return NULL;
