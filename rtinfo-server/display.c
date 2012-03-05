@@ -12,10 +12,44 @@
 #include "display.h"
 
 extern int nbclients;
+char *units[] = {"Ko", "Mo", "Go", "To"};
+
+double sizeroundd(uint64_t size) {
+	unsigned int i;
+	double result;
+	
+	result = size;
+	
+	for(i = 0; i < sizeof(units) / 2; i++) {
+		if(result / 1024 < 1023)
+			return result / 1024;
+			
+		else result /= 1024;
+	}
+	
+	return result;
+}
+
+char * unitround(uint64_t size) {
+	unsigned int i;
+	double result;
+	
+	result = size;
+	
+	for(i = 0; i < sizeof(units) / 4; i++) {
+		if(result / 1024 < 1023)
+			return units[i];
+			
+		else result /= 1024;
+	}
+	
+	return units[i - 1];
+}
 
 void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t *client) {
 	int i;
 	float memory_percent, swap_percent;
+	struct tm * timeinfo;
 	
 	move(client->id + 2, 0);
 	
@@ -79,38 +113,23 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 	/* Print Load Average Usage */
 	printw(" | ");
 	
-	if(packed->loadavg.min_1 > 1)
-		attrset(A_BOLD | COLOR_PAIR(3));
+	for(i = 0; i < 3; i++) {
+		if(packed->loadavg.load[i] > 1)
+			attrset(A_BOLD | COLOR_PAIR(3));
+		
+		else if(packed->loadavg.load[i] > 0.4)
+			attrset(A_BOLD | COLOR_PAIR(2));
+		
+		printw("% 2.2f ", packed->loadavg.load[i]);
+	}
 	
-	else if(packed->loadavg.min_1 > 0.4)
-		attrset(A_BOLD | COLOR_PAIR(2));
-	
-	printw("% 2.2f ", packed->loadavg.min_1);
-	
-	
-	if(packed->loadavg.min_5 > 1)
-		attrset(A_BOLD | COLOR_PAIR(3));
-	
-	else if(packed->loadavg.min_5 > 0.5)
-		attrset(A_BOLD | COLOR_PAIR(2));
-	
-	printw("% 2.2f ", packed->loadavg.min_5);
-	
-	if(packed->loadavg.min_15 > 1)
-		attrset(A_BOLD | COLOR_PAIR(3));
-	
-	else if(packed->loadavg.min_15 > 0.5)
-		attrset(A_BOLD | COLOR_PAIR(2));
-	
-	printw("% 2.2f", packed->loadavg.min_15);
-	attrset(COLOR_PAIR(1));
-	
-	printw(" | %s", inet_ntoa(remote->sin_addr));
+	printw("| %-15s", inet_ntoa(remote->sin_addr));
 	
 	/* printw(" | " BATTERY_NAME ": %c%d%%", battery_picto[battery.status], battery.load); */
 	
 	/* Print remote time */
-	// printw(" | %02d:%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+	timeinfo = localtime((time_t*) &packed->timestamp);
+	printw(" | %02d:%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
 	
 	refresh();
 }
@@ -130,40 +149,42 @@ void show_packet_network(netinfo_packed_net_t *net, struct sockaddr_in *remote, 
 			
 		printw(" %-14s | %-12s |", client->name, net->net[i].name);
 		
-		if(net->net[i].down_rate > 20000)
+		if(net->net[i].down_rate > 20 * 1024 * 1024)
 			attrset(A_BOLD | COLOR_PAIR(4));
 			
-		else if(net->net[i].down_rate > 1250)
+		else if(net->net[i].down_rate > 1.5 * 1024 * 1024)
 			attrset(A_BOLD | COLOR_PAIR(3));
 		
-		else if(net->net[i].down_rate > 100)
+		else if(net->net[i].down_rate > 100 * 1024)
 			attrset(A_BOLD | COLOR_PAIR(6));
 		
-		else if(net->net[i].down_rate > 2)
+		else if(net->net[i].down_rate > 2 * 1024)
 			attrset(A_BOLD | COLOR_PAIR(2));
 		
 		else attrset(A_BOLD | COLOR_PAIR(5));
 		
-		printw(" % 15d ko/s", net->net[i].down_rate);
+		printw(" % 15.2f %s/s ", sizeroundd(net->net[i].down_rate), unitround(net->net[i].down_rate));
 		attrset(COLOR_PAIR(1));
+		printw("| % 10.2f %s", sizeroundd(net->net[i].current.down), unitround(net->net[i].current.down));
 		
 		printw(" |");
-		if(net->net[i].up_rate > 20000)
+		if(net->net[i].up_rate > 20 * 1024 * 1024)
 			attrset(A_BOLD | COLOR_PAIR(4));
 			
-		else if(net->net[i].up_rate > 1250)
+		else if(net->net[i].up_rate > 1.5 * 1024 * 1024)
 			attrset(A_BOLD | COLOR_PAIR(3));
 		
-		else if(net->net[i].up_rate > 100)
+		else if(net->net[i].up_rate > 100 * 1024)
 			attrset(A_BOLD | COLOR_PAIR(6));
 		
-		else if(net->net[i].up_rate > 2)
+		else if(net->net[i].up_rate > 2 * 1024)
 			attrset(A_BOLD | COLOR_PAIR(2));
 		
 		else attrset(A_BOLD | COLOR_PAIR(5));
 		
-		printw(" % 15d ko/s", net->net[i].up_rate);
+		printw(" % 15.2f %s/s ", sizeroundd(net->net[i].up_rate), unitround(net->net[i].up_rate));
 		attrset(COLOR_PAIR(1));
+		printw("| % 8.2f %s", sizeroundd(net->net[i].current.up), unitround(net->net[i].current.up));
 		
 		/* Print IP */
 		printw(" | ");
@@ -177,7 +198,7 @@ void show_packet_network(netinfo_packed_net_t *net, struct sockaddr_in *remote, 
 	}
 	
 	client->nbiface -= reduce;
-	printw("----------------+--------------+----------------------+----------------------+----------------------");
+	printw("----------------+--------------+----------------------+---------------+----------------------+-------------+--------------------");
 	
 	refresh();
 }

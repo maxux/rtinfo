@@ -185,7 +185,7 @@ info_loadagv_t * getinfo_loadavg(info_loadagv_t *load) {
 	if(!file_get(LOADAVG_FILE, data, sizeof(data)))
 		return NULL;
 	
-	sscanf(data, "%f %f %f", &load->min_1, &load->min_5, &load->min_15);
+	sscanf(data, "%f %f %f", &load->load[0], &load->load[1], &load->load[2]);
 	
 	return load;
 }
@@ -394,8 +394,8 @@ info_network_t * mkinfo_network_usage(info_network_t *net, int nbiface, int time
 	
 	/* Network Usage: (current load - previous load) / timewait (milli sec) */
 	for(i = 0; i < nbiface; i++) {
-		net[i].down_rate = ((net[i].current.down - net[i].previous.down) / (timewait / 1000) / 1024);
-		net[i].up_rate   = ((net[i].current.up - net[i].previous.up) / (timewait / 1000)) / 1024;
+		net[i].down_rate = ((net[i].current.down - net[i].previous.down) / (timewait / 1000));
+		net[i].up_rate   = ((net[i].current.up - net[i].previous.up) / (timewait / 1000));
 		
 		if(net[i].down_rate < 0)
 			net[i].down_rate = 0;

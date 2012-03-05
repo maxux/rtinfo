@@ -41,9 +41,7 @@
 	
 	/* Load Average Structure */
 	typedef struct info_loadagv_t {
-		float min_1;		/* Load average for 1 min ago */
-		float min_5;		/* Load average for last 5 min */
-		float min_15;		/* Load average for last 15 min */
+		float load[3];		/* Load average [0-3] respectivly for 1, 5 and 15 min ago */
 		
 	} info_loadagv_t;
 	
@@ -75,8 +73,8 @@
 		char *name;		/* Interface name */
 		struct info_network_node_t current;	/* Number of bytes transfered over the interface */
 		struct info_network_node_t previous;	/* Copy of previous bytes transfered over the interface */
-		int up_rate;		/* Upload rate (in ko/s) */
-		int down_rate;		/* Download rate (in ko/s) */
+		int64_t up_rate;		/* Upload rate (in b/s) */
+		int64_t down_rate;		/* Download rate (in b/s) */
 		char ip[16];		/* IP Address in char */
 		
 	} info_network_t;
@@ -84,9 +82,8 @@
 	typedef struct info_network_legacy_t {
 		char name[32];		/* Interface name */
 		struct info_network_node_t current;	/* Number of bytes transfered over the interface */
-		struct info_network_node_t previous;	/* Copy of previous bytes transfered over the interface */
-		int up_rate;		/* Upload rate (in ko/s) */
-		int down_rate;		/* Download rate (in ko/s) */
+		int64_t up_rate;		/* Upload rate (in b/s) */
+		int64_t down_rate;		/* Download rate (in b/s) */
 		char ip[16];		/* IP Address in char */
 		
 	} info_network_legacy_t;

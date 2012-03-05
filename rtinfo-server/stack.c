@@ -52,32 +52,45 @@ client_t * stack_search(char *name) {
 	return temp;
 }
 
-void stack_ping() {
-	client_t *temp = clients;
+void * stack_ping(void *dummy) {
+	client_t *temp;
 	time_t t;
 	int i;
+	struct timespec tv;
 	
-	time(&t);
+	/* Loop each 5 seconds */
+	tv.tv_sec = 5;
+	tv.tv_nsec = 0;
 	
-	while(temp) {
-		if(t - 30 > temp->last) {
-			move(temp->id + 2, 0);
-			
-			clrtoeol();
-			attrset(A_BOLD | COLOR_PAIR(4));
-			
-			printw(" %-14s | Ping timeout", temp->name);
-			
-			move(nbclients + 5 + temp->line, 0);
-	
-			for(i = 0; i < temp->nbiface; i++) {
-				printw(" %-14s", temp->name);
-				move(nbclients + 5 + temp->line + i + 1, 0);
-			}
+	while(1) {
+		time(&t);
+		temp = clients;
+		
+		while(temp) {
+			if(t - 30 > temp->last) {
+				move(temp->id + 2, 0);
 				
-			attrset(COLOR_PAIR(1));	
+				clrtoeol();
+				attrset(A_BOLD | COLOR_PAIR(4));
+				
+				printw(" %-14s | Ping timeout", temp->name);
+				
+				move(nbclients + 5 + temp->line, 0);
+		
+				for(i = 0; i < temp->nbiface; i++) {
+					printw(" %-14s", temp->name);
+					move(nbclients + 5 + temp->line + i, 0);
+				}
+					
+				attrset(COLOR_PAIR(1));
+				refresh();
+			}
+			
+			temp = temp->next;
 		}
 		
-		temp = temp->next;
+		nanosleep(&tv, &tv);
 	}
+	
+	return dummy;
 }

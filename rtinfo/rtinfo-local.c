@@ -56,7 +56,7 @@ int localside() {
 		
 		
 		/* Display Data */
-		printf("CPU: ");
+		printf("\rCPU: ");
 		
 		for(i = 1; i < nbcpu; i++) {
 			if(cpu[i].usage > 85)
@@ -82,11 +82,13 @@ int localside() {
 		printf("%4llu Mo (%2.0f%%)" COLOR_NONE, (unsigned long long) memory.ram_used / 1024, ((float) memory.ram_used / memory.ram_total) * 100);
 		
 		printf(" | SWAP: %3llu Mo (%2.0f%%)", (unsigned long long) (memory.swap_total - memory.swap_free) / 1024, (memory.swap_total) ? ((float) (memory.swap_total - memory.swap_free) / memory.swap_total) * 100 : 0);
-		printf(" | AVG: %.2f %.2f", loadavg.min_1, loadavg.min_5);
-		/* printf(" | " BATTERY_NAME ": %c%d%%", battery_picto[battery.status], battery.load); */
-		/* printf(" | %02d:%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec); */
+		printf(" | AVG: %.2f %.2f", loadavg.load[0], loadavg.load[1]);
 		
-		printf("\n");
+		/* printf(" | " BATTERY_NAME ": %c%d%%", battery_picto[battery.status], battery.load); */
+		printf(" | %02d:%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+		
+		printf("\033[K ");
+		fflush(stdout);
 	}
 	
 	return 0;

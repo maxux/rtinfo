@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <ncurses.h>
 #include <signal.h>
+#include <pthread.h>
 #include "../rtinfo/socket.h"
 #include "server.h"
 #include "display.h"
@@ -37,6 +38,7 @@ int main(int argc, char *argv[]) {
 	size_t slen = sizeof(remote);
 	void *buffer = malloc(sizeof(char) * BUFFER_SIZE);	/* Data */
 	client_t *client;
+	pthread_t ping;
 	
 	/* Init Port */
 	if(argc > 1)
@@ -79,9 +81,13 @@ int main(int argc, char *argv[]) {
 	if(bind(sockfd, (struct sockaddr*) &si_me, sizeof(si_me)) == -1)
 		diep("bind");
 	
-	printw(" Hostname       | CPU Usage                    | RAM            | SWAP         | Load Avg.         | Remote IP \n");
-	printw("----------------+-------+----------------------+----------------+--------------+-------------------+-------------------\n\n");
+	printw(" Hostname       | CPU Usage                    | RAM            | SWAP         | Load Avg.         | Remote IP       | Time\n");
+	printw("----------------+-------+----------------------+----------------+--------------+-------------------+-----------------+----------\n\n");
 	refresh();
+	
+	/* Starting Ping Thread */
+	if(pthread_create(&ping, NULL, stack_ping, NULL))
+		diep("pthread_create");
 	
 	while(1) {
 		if(recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *) &remote, &slen) == -1)
@@ -116,8 +122,8 @@ int main(int argc, char *argv[]) {
 			nbclients++;
 			
 			move(nbclients + 2, 0);
-			printw("\n Hostname       | Interface    | Download Rate        | Upload rate          | Interface Address\n");
-			printw("----------------+--------------+----------------------+----------------------+----------------------");
+			printw("\n Hostname       | Interface    | Download Rate        | Download Size | Upload rate          | Upload Size | Interface Address\n");
+			printw("----------------+--------------+----------------------+---------------+----------------------+-------------+--------------------");
 			refresh();
 		}
 		
@@ -130,7 +136,7 @@ int main(int argc, char *argv[]) {
 		} else show_packet((netinfo_packed_t*) buffer, &remote, client);
 		
 		/* Check list */
-		stack_ping();
+		// stack_ping();
 	}
 
 	close(sockfd);

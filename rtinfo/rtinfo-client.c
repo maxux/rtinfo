@@ -101,8 +101,7 @@ int networkside(char *server, int port) {
 		/* Building Net Packet */
 		for(i = 0; i < net.nbiface; i++) {
 			strcpy(net.net[i].name, truenet[i].name);
-
-			net.net[i].previous = truenet[i].previous;
+			
 			net.net[i].current  = truenet[i].current;
 			
 			net.net[i].up_rate   = truenet[i].up_rate;
