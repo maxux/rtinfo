@@ -14,6 +14,29 @@
 extern int nbclients;
 char *units[] = {"Ko", "Mo", "Go", "To"};
 
+void refresh_whole() {
+	show_header();
+	show_net_header();
+}
+
+void show_header() {
+	move(0, 0);
+	
+	printw(" Hostname       | CPU Usage                    | RAM            | SWAP         | Load Avg.         | Remote IP       | Time\n");
+	printw("----------------+-------+----------------------+----------------+--------------+-------------------+-----------------+----------\n\n");
+	
+	refresh();
+}
+
+void show_net_header() {
+	move(nbclients + 2, 0);
+	
+	printw("\n Hostname       | Interface    | Download Rate        | Download Size | Upload rate          | Upload Size | Interface Address\n");
+	printw("----------------+--------------+----------------------+---------------+----------------------+-------------+--------------------");
+	
+	refresh();
+}
+
 double sizeroundd(uint64_t size) {
 	unsigned int i;
 	double result;
@@ -121,6 +144,7 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 			attrset(A_BOLD | COLOR_PAIR(2));
 		
 		printw("% 2.2f ", packed->loadavg.load[i]);
+		attrset(COLOR_PAIR(1));
 	}
 	
 	printw("| %-15s", inet_ntoa(remote->sin_addr));

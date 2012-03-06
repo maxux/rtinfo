@@ -49,6 +49,12 @@ void dummy(int signal) {
 			endwin();
 			exit(0);
 		break;
+		
+		case SIGWINCH:
+			endwin();
+			refresh_whole();
+			refresh();
+		break;
 	}
 }
 
@@ -101,13 +107,11 @@ int main(int argc, char *argv[]) {
 	if(bind(sockfd, (struct sockaddr*) &si_me, sizeof(si_me)) == -1)
 		diep("bind");
 	
-	printw(" Hostname       | CPU Usage                    | RAM            | SWAP         | Load Avg.         | Remote IP       | Time\n");
-	printw("----------------+-------+----------------------+----------------+--------------+-------------------+-----------------+----------\n\n");
-	refresh();
-	
 	/* Starting Ping Thread */
 	if(pthread_create(&ping, NULL, stack_ping, NULL))
 		diep("pthread_create");
+	
+	show_header();
 	
 	while(1) {
 		if(recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *) &remote, &slen) == -1)
@@ -141,10 +145,7 @@ int main(int argc, char *argv[]) {
 			
 			nbclients++;
 			
-			move(nbclients + 2, 0);
-			printw("\n Hostname       | Interface    | Download Rate        | Download Size | Upload rate          | Upload Size | Interface Address\n");
-			printw("----------------+--------------+----------------------+---------------+----------------------+-------------+--------------------");
-			refresh();
+			show_net_header();
 		}
 		
 		time(&client->last);
