@@ -30,13 +30,21 @@
 #include <ncurses.h>
 #include <signal.h>
 #include <pthread.h>
+#include <getopt.h>
 #include "../rtinfo/socket.h"
 #include "server.h"
 #include "display.h"
 #include "stack.h"
+#include "ip.h"
 
 client_t *clients = NULL;
 int nbclients = 0;
+
+static struct option long_options[] = {
+	{"allow",	required_argument, 0, 'a'},
+	{"port",	required_argument, 0, 'p'},
+	{0, 0, 0, 0}
+};
 
 void diep(char *str) {
 	perror(str);
@@ -59,18 +67,61 @@ void dummy(int signal) {
 }
 
 int main(int argc, char *argv[]) {
-	struct sockaddr_in si_me, remote;	/* Socket */
-	int sockfd, cid = 0, port;		/* Clients */
+	struct sockaddr_in si_me, remote;
+	int sockfd, cid = 0;
 	size_t slen = sizeof(remote);
-	void *buffer = malloc(sizeof(char) * BUFFER_SIZE);	/* Data */
+	
+	void *buffer = malloc(sizeof(char) * BUFFER_SIZE);	/* Data read */
+	
 	client_t *client;
 	pthread_t ping;
 	
-	/* Init Port */
-	if(argc > 1)
-		port = atoi(argv[1]);
-		
-	else port = DEFAULT_PORT;
+	/* ip allowed */
+	unsigned int *mask = NULL, *baseip = NULL;
+	int nballow = 0, i, x, y;
+	int port = DEFAULT_PORT;
+	
+	int option_index = 0;
+	
+	/* Parsing options */
+	while(1) {
+		cid = getopt_long (argc, argv, "a:p:", long_options, &option_index);
+
+		/* Detect the end of the options. */
+		if(cid == -1)
+			break;
+
+		switch(cid) {
+			/* New allowed client */
+			case 'a':
+				nballow++;
+				
+				mask   = (unsigned int*) realloc(mask, sizeof(unsigned int) * nballow);
+				baseip = (unsigned int*) realloc(baseip, sizeof(unsigned int) * nballow);
+				
+				if(ip_parsecidr(optarg, (baseip + (nballow - 1)), (mask + (nballow - 1)))) {
+					fprintf(stderr, "[-] cannot read allow entry\n");
+					return 1;
+				}
+			break;
+			
+			/* Specific port */
+			case 'p':
+				port = atoi(optarg);
+			break;
+
+			/* unrecognized option */
+			case '?':
+				return 1;
+			break;
+
+			default:
+				abort();
+		}
+	}
+	
+	/* Reset client-id variable */
+	cid = 0;
 	
 	/* Init Console */
 	initscr();		/* Init ncurses */
@@ -117,6 +168,30 @@ int main(int argc, char *argv[]) {
 		if(recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *) &remote, &slen) == -1)
 			diep("recvfrom()");
 		
+		/* Checking ip --allowed */
+		if(nballow) {
+			for(i = 0; i < nballow; i++) {
+				if((remote.sin_addr.s_addr & mask[i]) == baseip[i]) {
+					i = -1;
+					break;
+				}
+			}
+			
+			/* ip disallowed */
+			if(i != -1) {
+				getmaxyx(stdscr, y, x);			
+				move(y - 1, 0);
+				
+				attrset(A_BOLD | COLOR_PAIR(4));
+				printw("Warning: denied packed received from: %s", inet_ntoa(remote.sin_addr));
+				attrset(A_BOLD | COLOR_PAIR(1));
+				
+				refresh();
+				
+				continue;
+			}
+		}
+		
 		if(((netinfo_packed_t*) buffer)->options & QRY_SOCKET) {
 			/* printw("New client: %d | %s\n", cid, ((netinfo_packed_t*) buffer)->hostname); */
 			
@@ -155,9 +230,6 @@ int main(int argc, char *argv[]) {
 			show_packet_network((netinfo_packed_net_t*) buffer, &remote, client);
 
 		} else show_packet((netinfo_packed_t*) buffer, &remote, client);
-		
-		/* Check list */
-		// stack_ping();
 	}
 
 	close(sockfd);
