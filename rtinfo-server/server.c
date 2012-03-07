@@ -48,6 +48,8 @@ static struct option long_options[] = {
 };
 
 void diep(char *str) {
+	endwin();
+	endwin();
 	perror(str);
 	exit(1);
 }
@@ -145,15 +147,18 @@ int main(int argc, char *argv[]) {
 	cbreak();		/* No break line */
 	noecho();		/* No echo key */
 	start_color();		/* Enable color */
+	use_default_colors();
 	curs_set(0);		/* Disable cursor */
 	
-	init_pair(1, COLOR_WHITE,  COLOR_BLACK);
-	init_pair(2, COLOR_BLUE,   COLOR_BLACK);
-	init_pair(3, COLOR_YELLOW, COLOR_BLACK);
-	init_pair(4, COLOR_RED,    COLOR_BLACK);
-	init_pair(5, COLOR_BLACK,  COLOR_BLACK);
-	init_pair(6, COLOR_CYAN,   COLOR_BLACK);
-	init_pair(7, COLOR_GREEN,  COLOR_BLACK);
+	init_pair(1, COLOR_WHITE,   COLOR_BLACK);
+	init_pair(2, COLOR_BLUE,    COLOR_BLACK);
+	init_pair(3, COLOR_YELLOW,  COLOR_BLACK);
+	init_pair(4, COLOR_RED,     COLOR_BLACK);
+	init_pair(5, COLOR_BLACK,   COLOR_BLACK);
+	init_pair(6, COLOR_CYAN,    COLOR_BLACK);
+	init_pair(7, COLOR_GREEN,   COLOR_BLACK);
+	init_pair(8, COLOR_MAGENTA, COLOR_BLACK);
+	init_color(COLOR_BLACK, 0, 0, 0);
 	
 	attrset(COLOR_PAIR(1));
 	
