@@ -2,26 +2,180 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
+#include <signal.h>
+#include <ncurses.h>
 #include "../librtinfo/sysinfo.h"
 #include "../librtinfo/misc.h"
 #include "rtinfo-local.h"
+
+#define RATE_COLD	(A_BOLD | COLOR_PAIR(5))
+#define RATE_ACTIVE	(A_BOLD | COLOR_PAIR(8))
+#define RATE_LOW	(A_BOLD | COLOR_PAIR(6))
+#define RATE_MIDDLE	(A_BOLD | COLOR_PAIR(3))
+#define RATE_HIGH	(A_BOLD | COLOR_PAIR(4))
+
+#define LEVEL_COLD	(A_BOLD | COLOR_PAIR(5))
+#define LEVEL_ACTIVE	(COLOR_PAIR(1))
+#define LEVEL_WARN	(A_BOLD | COLOR_PAIR(3))
+#define LEVEL_HIGH	(A_BOLD | COLOR_PAIR(4))
+
+#define TITLE_STYLE	(A_BOLD | COLOR_PAIR(6))
+
+int x, y;
+char *units[] = {"Ko", "Mo", "Go", "To"};
+
+/* Network rate colors */
+int rate_limit[] = {
+		2   * 1024,		/* 2   Ko/s | Magenta	*/
+		100 * 1024,		/* 100 Ko/s | Cyan	*/
+		1.5 * 1024 * 1024,	/* 1.5 Mo/s | Yellow	*/
+		20  * 1024 * 1024,	/* 20  Mo/s | Red	*/
+};
+
+/* Memory (RAM/SWAP) level colors */
+int memory_limit[] = {
+		30,	/* 30% | White  */
+		50,	/* 50% | Yellow */
+		85,	/* 85% | Red    */
+};
+
+int cpu_limit[] = {
+		30,	/* 30% | White  */
+		50,	/* 50% | Yellow */
+		85,	/* 85% | Red	*/
+};
+
+void dummy(int signal) {
+	switch(signal) {
+		case SIGINT:
+			endwin();
+			exit(0);
+		break;
+		
+		case SIGWINCH:
+			endwin();
+			clear();
+			refresh();
+			
+			getmaxyx(stdscr, y, x);
+			
+			move(0, 0);
+			printw("Reloading...");
+			refresh();
+			
+			usleep(200000);
+		break;
+	}
+}
+
+void separe(char wide) {
+	int attrs;
+	short pair;
+	
+	/* Saving current state */
+	attr_get(&attrs, &pair, NULL);
+	
+	/* Print sepration */
+	attrset(COLOR_PAIR(2));
+	if(wide)
+		printw(" | ");
+		
+	else printw("|");
+	
+	/* Restoring */
+	attr_set(attrs, pair, NULL);
+}
+
+double sizeroundd(uint64_t size) {
+	unsigned int i;
+	double result = size;
+	
+	for(i = 0; i < (sizeof(units) / 2) - 1; i++) {
+		if(result / 1024 < 1023)
+			return result / 1024;
+			
+		else result /= 1024;
+	}
+	
+	return result;
+}
+
+char * unitround(uint64_t size) {
+	unsigned int i;
+	double result = size / 1024;	/* First unit is Ko */
+	
+	for(i = 0; i < sizeof(units) / sizeof(units[0]); i++) {
+		if(result < 1023)
+			break;
+			
+		result /= 1024;
+	}
+	
+	return units[i];
+}
+
+void split() {
+	attrset(COLOR_PAIR(6));
+	hline(ACS_HLINE, x - 2);
+}
 
 int localside() {
 	info_memory_t memory;
 	info_loadagv_t loadavg;
 	info_cpu_t *cpu;
-	/* info_battery_t battery; */
+	
+	info_battery_t battery;
+	int use_battery = 1;
+	char *battery_picto = "=+-";
+	
 	info_network_t *net;
+	float memory_percent, swap_percent;
 	
 	int nbcpu, nbiface, i;
 	struct tm * timeinfo;
+	char hostname[32];
 	
-	/* char *battery_picto = "=+-"; */
+	
+	/* Reading hostname */
+	if(gethostname(hostname, sizeof(hostname)))
+		diep("gethostname");
+	
+	/* Init Console */
+	initscr();		/* Init ncurses */
+	cbreak();		/* No break line */
+	noecho();		/* No echo key */
+	start_color();		/* Enable color */
+	use_default_colors();
+	curs_set(0);		/* Disable cursor */
+	keypad(stdscr, TRUE);
+	scrollok(stdscr, 1);
+	
+	init_pair(1, COLOR_WHITE,   COLOR_BLACK);
+	init_pair(2, COLOR_BLUE,    COLOR_BLACK);
+	init_pair(3, COLOR_YELLOW,  COLOR_BLACK);
+	init_pair(4, COLOR_RED,     COLOR_BLACK);
+	init_pair(5, COLOR_BLACK,   COLOR_BLACK);
+	init_pair(6, COLOR_CYAN,    COLOR_BLACK);
+	init_pair(7, COLOR_GREEN,   COLOR_BLACK);
+	init_pair(8, COLOR_MAGENTA, COLOR_BLACK);
+	init_color(COLOR_BLACK, 0, 0, 0);
+	
+	attrset(COLOR_PAIR(1));
+	
+	/* Skipping Resize Signal */
+	signal(SIGINT, dummy);
+	signal(SIGWINCH, dummy);
 	
 	/* Initializing variables */
 	net = initinfo_network(&nbiface);
 	cpu = initinfo_cpu(&nbcpu);
 	
+	/* Loading curses */
+	getmaxyx(stdscr, y, x);
+	
+	printw("Loading...");
+	refresh();
+		
 	/* Working */	
 	while(1) {	
 		/* Pre-reading data */
@@ -48,47 +202,247 @@ int localside() {
 			return 1;
 		
 		/* Reading Battery State */
-		/* if(!getinfo_battery(&battery))
-			return 1; */
+		if(use_battery && !getinfo_battery(&battery))
+			return 1;
 		
 		/* Reading Time Info */
 		timeinfo = getinfo_time();
 		
+		/*
+		 * ncurses data printing
+		 */
 		
-		/* Display Data */
-		printf("\rCPU: ");
+		move(0, 0);
+	
+		/* Display Hostname */
+		attrset(COLOR_PAIR(1));
+		printw(" > ");
 		
-		for(i = 1; i < nbcpu; i++) {
+		attrset(A_BOLD | COLOR_PAIR(7));
+		printw("%s ", hostname);
+		
+		/* Uptime */
+		attrset(COLOR_PAIR(8));
+		printw("(Uptime: disabled)");
+		
+		/* Time */
+		move(0, x - 10);
+		attrset(COLOR_PAIR(1));
+		printw("%02d:%02d:%02d\n\n", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+		
+		/* Print CPU Usage */
+		// split();
+		attrset(TITLE_STYLE);
+		printw("\n CPU  : ");
+		
+		for(i = 0; i < nbcpu; i++) {
 			if(cpu[i].usage > 85)
-				printf(COLOR_RED);
+				attrset(LEVEL_HIGH);
 				
 			else if(cpu[i].usage > 50)
-				printf(COLOR_YELLOW);
+				attrset(LEVEL_WARN);
+			
+			else if(cpu[i].usage > 30)
+				attrset(LEVEL_ACTIVE);
 				
-			printf("%3d%% " COLOR_NONE, cpu[i].usage);
+			else attrset(LEVEL_COLD);
+			
+			printw("%3d%% ", cpu[i].usage);
+			attrset(COLOR_PAIR(1));
+			
+			if(i == 0)
+				separe(1);
 		}
 		
-		/* printf(" | NET: ");
-		for(i = 0; i < nbiface; i++)
-			printf("[%s] % 8d ko/s - % 8d ko/s ", net[i].name, net[i].up_rate, net[i].down_rate); */
+		/* Print Memory Usage */
+		attrset(TITLE_STYLE);
+		printw("\n\n RAM  : ");
 		
-		printf("| RAM: ");
-		if(((float) memory.ram_used / memory.ram_total) * 100 > 80)
-			printf(COLOR_RED);
+		memory_percent = ((float) memory.ram_used / memory.ram_total) * 100;
+		
+		if(memory_percent > memory_limit[2])
+			attrset(LEVEL_HIGH);
 			
-		else if(((float) memory.ram_used / memory.ram_total) * 100 > 50)
-			printf(COLOR_YELLOW);
+		else if(memory_percent > memory_limit[1])
+			attrset(LEVEL_WARN);
+		
+		else if(memory_percent > memory_limit[0])
+			attrset(LEVEL_ACTIVE);
+		
+		else attrset(LEVEL_COLD);
+		
+		printw("% 6lld Mo (%2.0f%%)", memory.ram_used / 1024, memory_percent);
+		
+		attrset(TITLE_STYLE);
+		printw("\n SWAP : ");
+		if(memory.swap_total > 0) {
+			swap_percent = ((float) (memory.swap_total - memory.swap_free) / memory.swap_total) * 100;
 			
-		printf("%4llu Mo (%2.0f%%)" COLOR_NONE, (unsigned long long) memory.ram_used / 1024, ((float) memory.ram_used / memory.ram_total) * 100);
+			if(swap_percent > memory_limit[2])
+				attrset(LEVEL_HIGH);
+				
+			else if(swap_percent > memory_limit[1])
+				attrset(LEVEL_WARN);
+			
+			else if(swap_percent > memory_limit[0])
+				attrset(LEVEL_ACTIVE);
+			
+			else attrset(LEVEL_COLD);
+				
+			printw("% 6lld Mo (%2.0f%%)", (memory.swap_total - memory.swap_free) / 1024, swap_percent);
+			
+		} else {
+			attrset(A_BOLD | COLOR_PAIR(8));	/* Magenta */
+			printw("No swap");
+		}
 		
-		printf(" | SWAP: %3llu Mo (%2.0f%%)", (unsigned long long) (memory.swap_total - memory.swap_free) / 1024, (memory.swap_total) ? ((float) (memory.swap_total - memory.swap_free) / memory.swap_total) * 100 : 0);
-		printf(" | AVG: %.2f %.2f", loadavg.load[0], loadavg.load[1]);
 		
-		/* printf(" | " BATTERY_NAME ": %c%d%%", battery_picto[battery.status], battery.load); */
-		printf(" | %02d:%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+		/* Print Load Average Usage */
+		attrset(TITLE_STYLE);
+		printw("\n\n Load : ");
 		
-		printf("\033[K ");
-		fflush(stdout);
+		for(i = 0; i < 3; i++) {
+			if(loadavg.load[i] >= nbcpu - 1)
+				attrset(LEVEL_HIGH);
+				
+			else if(loadavg.load[i] > (nbcpu / 2))
+				attrset(LEVEL_WARN);
+			
+			else if(loadavg.load[i] > 0.4)
+				attrset(LEVEL_ACTIVE);
+			
+			else attrset(LEVEL_COLD);
+			
+			printw("% 2.2f ", loadavg.load[i]);
+		}
+		
+		
+		/* Battery */
+		move(3, (x / 2) - 4);
+		separe(1);
+		
+		attrset(TITLE_STYLE);
+		printw("Battery    : ");
+		
+		if(use_battery) {
+			if(battery.load < 10)
+				attrset(LEVEL_HIGH);
+				
+			else if(battery.load < 50)
+				attrset(LEVEL_WARN);
+				
+			else if(battery.load < 80)
+				attrset(LEVEL_ACTIVE);
+				
+			else attrset(LEVEL_COLD);
+			
+			printw("%c%d%% (" BATTERY_NAME ")", battery_picto[battery.status], battery.load);
+		} else {
+			attrset(LEVEL_COLD);
+			printw("none");
+		}
+		
+		
+		/* Full RAM */
+		move(4, (x / 2) - 4);
+		separe(1);
+		
+		move(5, (x / 2) - 4);
+		separe(1);
+		
+		attrset(TITLE_STYLE);
+		printw("RAM Total  : ");
+		
+		attrset(LEVEL_COLD);
+		printw("% 6lld Mo", memory.ram_total / 1024);
+		
+		
+		/* Full SWAP */
+		move(6, (x / 2) - 4);
+		separe(1);
+		
+		attrset(TITLE_STYLE);
+		printw("SWAP Total : ");
+		
+		attrset(LEVEL_COLD);
+		printw("% 6lld Mo", memory.swap_total / 1024);
+		
+		/* Network Interfaces */
+		move(7, (x / 2) - 4);
+		separe(1);
+		
+		move(8, (x / 2) - 4);
+		separe(1);
+		
+		attrset(TITLE_STYLE);
+		printw("Net Inter. : ");
+		
+		attrset(LEVEL_COLD);
+		printw("%d", nbiface);
+		
+		/*
+		 * Network part
+		 */
+		move(10, 0);
+		
+		for(i = 0; i < nbiface; i++) {
+			/* Interface */
+			attrset(COLOR_PAIR(1));
+			printw(" %-12s", net[i].name);
+			separe(0);
+			
+			if(net[i].down_rate > rate_limit[3])
+				attrset(RATE_HIGH);
+				
+			else if(net[i].down_rate > rate_limit[2])
+				attrset(RATE_MIDDLE);
+			
+			else if(net[i].down_rate > rate_limit[1])
+				attrset(RATE_LOW);
+			
+			else if(net[i].down_rate > rate_limit[0])
+				attrset(RATE_ACTIVE);
+			
+			else attrset(RATE_COLD);
+			
+			printw(" % *.2f %s/s", (x / 2) - 38, sizeroundd(net[i].down_rate), unitround(net[i].down_rate));
+			separe(1);
+			
+			attrset(COLOR_PAIR(1));
+			printw("% 8.2f %s\n", sizeroundd(net[i].current.down), unitround(net[i].current.down));
+		}
+		
+		for(i = 0; i < nbiface; i++) {
+			move(10 + i, (x / 2) - 4);
+			separe(1);
+			
+			if(net[i].up_rate > rate_limit[3])
+				attrset(RATE_HIGH);
+				
+			else if(net[i].up_rate > rate_limit[2])
+				attrset(RATE_MIDDLE);
+			
+			else if(net[i].up_rate > rate_limit[1])
+				attrset(RATE_LOW);
+			
+			else if(net[i].up_rate > rate_limit[0])
+				attrset(RATE_ACTIVE);
+			
+			else attrset(RATE_COLD);
+			
+			printw("% *.2f %s/s", (x / 2) - 38, sizeroundd(net[i].up_rate), unitround(net[i].up_rate));
+			separe(1);
+			
+			attrset(COLOR_PAIR(1));
+			printw("% 8.2f %s", sizeroundd(net[i].current.up), unitround(net[i].current.up));
+			
+			/* Print IP */
+			separe(1);
+			printw("%s\n", net[i].ip);
+			attrset(COLOR_PAIR(1));
+		}
+		
+		refresh();
 	}
 	
 	return 0;
