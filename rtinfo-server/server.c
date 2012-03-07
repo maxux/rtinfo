@@ -72,7 +72,9 @@ void dummy(int signal) {
 }
 
 void print_usage(char *app) {
+	printf("rtinfo Server (version %f)\n", SERVER_VERSION);
 	printf("%s [-p|--port PORT] [-a|--allow IP/MASK] [-h|--help]\n\n", app);
+	
 	printf(" --port      specify listen port\n");
 	printf(" --allow     remote ip allowed (ip/mask)\n");
 	printf(" --help      this message\n");
@@ -149,6 +151,8 @@ int main(int argc, char *argv[]) {
 	start_color();		/* Enable color */
 	use_default_colors();
 	curs_set(0);		/* Disable cursor */
+	keypad(stdscr, TRUE);
+	scrollok(stdscr, 1);
 	
 	init_pair(1, COLOR_WHITE,   COLOR_BLACK);
 	init_pair(2, COLOR_BLUE,    COLOR_BLACK);
@@ -217,8 +221,12 @@ int main(int argc, char *argv[]) {
 		if(((netinfo_packed_t*) buffer)->options & QRY_SOCKET) {
 			/* printw("New client: %d | %s\n", cid, ((netinfo_packed_t*) buffer)->hostname); */
 			
+			/* Authentification accepted */
 			((netinfo_packed_t*) buffer)->options  = ACK_SOCKET;
 			((netinfo_packed_t*) buffer)->clientid = cid;
+			
+			/* Sending Server Version */
+			((netinfo_packed_t*) buffer)->loadavg.load[0] = SERVER_VERSION;
 			
 			if(sendto(sockfd, buffer, sizeof(netinfo_packed_t), 0, (const struct sockaddr *) &remote, sizeof(struct sockaddr_in)) == -1)
 				diep("sendto");

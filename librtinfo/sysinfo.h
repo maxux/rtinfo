@@ -12,6 +12,8 @@
 	#define NET_FILE	"/proc/net/dev"
 	#define BATTERY_PATH	"/sys/class/power_supply/" BATTERY_NAME
 	
+	#define RTLIB_VERSION	2.0
+	
 	#include <stdint.h>
 	
 	/* CPU Structures */

@@ -37,6 +37,9 @@ int networkside(char *server, int port) {
 
 	int sockfd, i;
 	
+	printf("[+] Starting rtinfo network client (version %.2f)\n", CLIENT_VERSION);
+	printf("[ ] Compiled with librtinfo version %.2f\n", RTLIB_VERSION);
+	
 	/* Writing hostname on netinfo_packed_t */
 	if(gethostname(packed.hostname, sizeof(packed.hostname)))
 		diep("gethostname");
@@ -69,7 +72,7 @@ int networkside(char *server, int port) {
 	netbuild_cast->nbiface = nbiface;
 	
 	printf("[+] Network Interfaces  : %d\n", netbuild_cast->nbiface);
-	printf("[+] Netinfo summary size: %lu bytes\n", sizeof(netinfo_packed_t));
+	printf("[+] Netinfo summary size: %lu bytes\n", (unsigned long int) sizeof(netinfo_packed_t));
 	printf("[+] Netinfo network size: %d bytes\n", netbuild_size);
 	
 	/* Writing hostname to sending packed */
@@ -100,7 +103,8 @@ int networkside(char *server, int port) {
 	}
 	
 	/* Authentificating */
-	packed.options = QRY_SOCKET;
+	packed.options		= QRY_SOCKET;
+	packed.loadavg.load[0]	= CLIENT_VERSION; 
 	netinfo_send(sockfd, &packed, sizeof(netinfo_packed_t), &remote);
 	
 	/* Waiting response from server */
@@ -110,8 +114,14 @@ int networkside(char *server, int port) {
 	if(!(packed.options & ACK_SOCKET)) {
 		fprintf(stderr, "[-] Wrong response from server\n");
 		exit(1);
+	}
+	
+	if((int) packed.loadavg.load[0] != (int) CLIENT_VERSION) {
+		fprintf(stderr, "[-] Major version client/server mismatch\n");
+		exit(1);
+	}
 		
-	} else printf("[+] Client id: %d\n[+] Server version: \n", packed.clientid);
+	printf("[+] Client id: %d\n[+] Server version: %.2f\n", packed.clientid, packed.loadavg.load[0]);
 	
 	
 	/*

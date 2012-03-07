@@ -14,6 +14,8 @@
 extern int nbclients;
 char *units[] = {"Ko", "Mo", "Go", "To"};
 
+int x, y;
+
 /* Network rate colors */
 int rate_limit[] = {
 		2   * 1024,		/* 2   Ko/s | Magenta	*/
@@ -86,6 +88,8 @@ void refresh_whole() {
 void show_header() {
 	move(0, 0);
 	
+	getmaxyx(stdscr, y, x);
+	
 	title("Hostname", 14, 0);
 	title("CPU Usage", 28, 0);
 	title("RAM", 14, 0);
@@ -101,6 +105,9 @@ void show_header() {
 }
 
 void show_net_header() {
+	if(y < nbclients + 6)
+		return;
+		
 	move(nbclients + 2, 0);
 	
 	printw("\n");
@@ -265,6 +272,11 @@ void show_packet_network(netinfo_packed_net_t *net, struct sockaddr_in *remote, 
 	int i, reduce = 0;
 	
 	remote = NULL;
+	
+	/* Console too small */
+	if(nbclients + 5 + client->line + client->nbiface > y)
+		return;
+		
 	move(nbclients + 5 + client->line, 0);
 	
 	for(i = 0; i < net->nbiface; i++) {
