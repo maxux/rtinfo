@@ -31,7 +31,8 @@ How to use it
 	Port argument is optional. 
 	
 	Warning: there is no encryption for the udp packets. If you are on a dangerous network, please consider 
-	         using rtinfo over an ssh tunnel or an encrypted vpn. There is (at this time) no security check made on the server side.
+	         using rtinfo over an ssh tunnel or an encrypted vpn.
+		 Server is now able to allow a restricted remote client list.
 
 Bug ?
 =====
