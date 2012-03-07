@@ -35,7 +35,7 @@
 		netinfo_options_t options;
 		char hostname[32];
 		int nbiface;
-		info_network_legacy_t net[16];	/* At this time, limited to 16 interfaces */
+		info_network_legacy_t net[];	/* Warning: limited to 16 interfaces */
 		
 	} netinfo_packed_net_t;
 	
