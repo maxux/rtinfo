@@ -125,7 +125,7 @@ int localside() {
 	info_cpu_t *cpu;
 	
 	info_battery_t battery;
-	int use_battery = 1;
+	int use_battery = 0;
 	char *battery_picto = "=+-";
 	
 	info_network_t *net;
