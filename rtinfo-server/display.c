@@ -39,11 +39,9 @@ void show_net_header() {
 
 double sizeroundd(uint64_t size) {
 	unsigned int i;
-	double result;
+	double result = size;
 	
-	result = size;
-	
-	for(i = 0; i < sizeof(units) / 2; i++) {
+	for(i = 0; i < (sizeof(units) / 2) - 1; i++) {
 		if(result / 1024 < 1023)
 			return result / 1024;
 			
@@ -55,18 +53,16 @@ double sizeroundd(uint64_t size) {
 
 char * unitround(uint64_t size) {
 	unsigned int i;
-	double result;
+	double result = size / 1024;	/* First unit is Ko */
 	
-	result = size;
-	
-	for(i = 0; i < sizeof(units) / 4; i++) {
-		if(result / 1024 < 1023)
-			return units[i];
+	for(i = 0; i < sizeof(units) / sizeof(units[0]); i++) {
+		if(result < 1023)
+			break;
 			
-		else result /= 1024;
+		result /= 1024;
 	}
 	
-	return units[i - 1];
+	return units[i];
 }
 
 void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t *client) {

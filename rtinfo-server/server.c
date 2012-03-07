@@ -43,6 +43,7 @@ int nbclients = 0;
 static struct option long_options[] = {
 	{"allow",	required_argument, 0, 'a'},
 	{"port",	required_argument, 0, 'p'},
+	{"help",	no_argument, 0, 'h'},
 	{0, 0, 0, 0}
 };
 
@@ -60,16 +61,27 @@ void dummy(int signal) {
 		
 		case SIGWINCH:
 			endwin();
+			clear();
 			refresh_whole();
 			refresh();
+			refresh_whole();	/* Second pass required */
 		break;
 	}
+}
+
+void print_usage(char *app) {
+	printf("%s [-p|--port PORT] [-a|--allow IP/MASK] [-h|--help]\n\n", app);
+	printf(" --port      specify listen port\n");
+	printf(" --allow     remote ip allowed (ip/mask)\n");
+	printf(" --help      this message\n");
+	
+	exit(1);
 }
 
 int main(int argc, char *argv[]) {
 	struct sockaddr_in si_me, remote;
 	int sockfd, cid = 0;
-	size_t slen = sizeof(remote);
+	socklen_t slen = sizeof(remote);
 	
 	void *buffer = malloc(sizeof(char) * BUFFER_SIZE);	/* Data read */
 	
@@ -85,7 +97,7 @@ int main(int argc, char *argv[]) {
 	
 	/* Parsing options */
 	while(1) {
-		cid = getopt_long (argc, argv, "a:p:", long_options, &option_index);
+		cid = getopt_long (argc, argv, "a:p:h", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if(cid == -1)
@@ -109,9 +121,14 @@ int main(int argc, char *argv[]) {
 			case 'p':
 				port = atoi(optarg);
 			break;
+			
+			case 'h':
+				print_usage(argv[0]);
+			break;
 
 			/* unrecognized option */
 			case '?':
+				print_usage(argv[0]);
 				return 1;
 			break;
 
