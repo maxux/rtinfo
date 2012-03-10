@@ -22,8 +22,13 @@
 } */
 
 int networkside(char *server, int port) {
-	netinfo_packed_t packed;
+	netinfo_packed_t *packed_cast;
+	char *packedbuild;
+	short packedbuild_size;
+	
 	rtinfo_cpu_t *cpu;
+	int nbcpu;
+	short cpu_size;
 	
 	rtinfo_network_t *truenet;
 	int nbiface;
@@ -34,15 +39,10 @@ int networkside(char *server, int port) {
 	netinfo_packed_net_t *netbuild_cast;
 	
 	struct sockaddr_in remote;
-
 	int sockfd, i;
 	
 	printf("[+] Starting rtinfo network client (version %.2f)\n", CLIENT_VERSION);
 	printf("[ ] Compiled with librtinfo version %.2f\n", rtinfo_version());
-	
-	/* Writing hostname on netinfo_packed_t */
-	if(gethostname(packed.hostname, sizeof(packed.hostname)))
-		diep("gethostname");
 	
 	/*
 	 * Initializing Network
@@ -84,13 +84,30 @@ int networkside(char *server, int port) {
 	/*
 	 * Initializing CPU
 	 */
-	cpu = rtinfo_init_cpu(&packed.nbcpu);
+	cpu = rtinfo_init_cpu(&nbcpu);
 	free(cpu);
 	
-	if(packed.nbcpu > 16) {
-		fprintf(stderr, "At this time, I don't support > 16 CPU over the network\n");
-		exit(1);
+	if(nbcpu > 16) {
+		nbcpu = 16;
+		fprintf(stderr, "[-] Warning: At this time, only 15 cpu can handled over the network\n");
 	}
+	
+	/* Calculate size of packed_t required */
+	cpu_size = sizeof(rtinfo_cpu_t) * nbcpu;
+	
+	/* Building 'netbuild' memory area with dynamic extra content (like interfaces) */
+	packedbuild_size = sizeof(netinfo_packed_t) + cpu_size;
+	packedbuild = (char*) malloc(packedbuild_size);
+	
+	/* Casting to avoid shit code */
+	packed_cast = (netinfo_packed_t*) packedbuild;
+	
+	/* Saving nbinterface to sending packet */
+	packed_cast->nbcpu = nbcpu;
+	
+	/* Writing hostname on netinfo_packed_t */
+	if(gethostname(packed_cast->hostname, sizeof(packed_cast->hostname)))
+		diep("gethostname");
 	
 	/*
 	 * Initializing Socket
@@ -103,31 +120,32 @@ int networkside(char *server, int port) {
 	}
 	
 	/* Authentificating */
-	packed.options		= QRY_SOCKET;
-	packed.loadavg.load[0]	= CLIENT_VERSION; 
-	netinfo_send(sockfd, &packed, sizeof(netinfo_packed_t), &remote);
+	packed_cast->options		= QRY_SOCKET;
+	packed_cast->loadavg.load[0]	= CLIENT_VERSION; 
+	netinfo_send(sockfd, packed_cast, packedbuild_size, &remote);
 	
 	/* Waiting response from server */
-	if(recv(sockfd, &packed, sizeof(packed), 0) == -1)
+	if(recv(sockfd, packed_cast, packedbuild_size, 0) == -1)
 		diep("recvfrom");
 	
-	if(!(packed.options & ACK_SOCKET)) {
+	if(!(packed_cast->options & ACK_SOCKET)) {
 		fprintf(stderr, "[-] Wrong response from server\n");
 		exit(1);
 	}
 	
-	if((int) packed.loadavg.load[0] != (int) CLIENT_VERSION) {
-		fprintf(stderr, "[-] Major version client/server mismatch\n");
+	if((int) packed_cast->loadavg.load[0] != (int) CLIENT_VERSION) {
+		fprintf(stderr, "[-] Major version client/server (%.2f/%.2f) mismatch\n", CLIENT_VERSION, packed_cast->loadavg.load[0]);
 		exit(1);
 	}
 		
-	printf("[+] Client id: %d\n[+] Server version: %.2f\n", packed.clientid, packed.loadavg.load[0]);
+	printf("[+] Client id: %d\n", packed_cast->clientid);
+	printf("[+] Server version: %.2f\n", packed_cast->loadavg.load[0]);
 	
 	
 	/*
 	 * Building options
 	 */
-	packed.options         = USE_MEMORY | USE_LOADAVG | USE_TIME;	/* FIXME: Not used at this time */
+	packed_cast->options         = USE_MEMORY | USE_LOADAVG | USE_TIME;	/* FIXME: Not used at this time */
 	netbuild_cast->options = USE_NETWORK;
 	
 	printf("[+] Sending data...\n");
@@ -135,26 +153,30 @@ int networkside(char *server, int port) {
 	/* Working */
 	while(1) {	
 		/* Pre-reading data */
-		rtinfo_get_cpu(packed.cpu, packed.nbcpu);
+		rtinfo_get_cpu(packed_cast->cpu, packed_cast->nbcpu);
 		rtinfo_get_network(truenet, netbuild_cast->nbiface);
 
 		/* Sleeping */
 		usleep(UPDATE_INTERVAL);
 		
 		/* Reading CPU */
-		rtinfo_get_cpu(packed.cpu, packed.nbcpu);
-		rtinfo_mk_cpu_usage(packed.cpu, packed.nbcpu);
+		rtinfo_get_cpu(packed_cast->cpu, packed_cast->nbcpu);
+		rtinfo_mk_cpu_usage(packed_cast->cpu, packed_cast->nbcpu);
 		
 		/* Reading Network */
 		rtinfo_get_network(truenet, netbuild_cast->nbiface);
 		rtinfo_mk_network_usage(truenet, netbuild_cast->nbiface, UPDATE_INTERVAL / 1000);
 		
 		/* Reading Memory */
-		if(!rtinfo_get_memory(&packed.memory))
+		if(!rtinfo_get_memory(&packed_cast->memory))
 			return 1;
 		
 		/* Reading Load Average */
-		if(!rtinfo_get_loadavg(&packed.loadavg))
+		if(!rtinfo_get_loadavg(&packed_cast->loadavg))
+			return 1;
+		
+		/* Reading uptime */
+		if(!rtinfo_get_uptime(&packed_cast->uptime))
 			return 1;
 		
 		/* Reading Battery State */
@@ -162,10 +184,10 @@ int networkside(char *server, int port) {
 			return 1; */
 		
 		/* Reading Time Info */
-		time((time_t*) &packed.timestamp);
+		time((time_t*) &packed_cast->timestamp);
 		
 		/* Sending info_t packed */
-		netinfo_send(sockfd, &packed, sizeof(netinfo_packed_t), &remote);
+		netinfo_send(sockfd, packed_cast, packedbuild_size, &remote);
 		
 		/*
 		 * Building Network packet from librtinfo reponse

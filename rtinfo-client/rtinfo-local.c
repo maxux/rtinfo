@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <ncurses.h>
 #include <rtinfo.h>
+#include <inttypes.h>
 #include "rtinfo-client.h"
 #include "rtinfo-local.h"
 
@@ -23,6 +24,7 @@
 
 int x, y;
 char *units[] = {"Ko", "Mo", "Go", "To"};
+char *uptime_units[] = {"min", "hrs", "days"};
 
 /* Network rate colors */
 int rate_limit[] = {
@@ -114,6 +116,26 @@ char * unitround(uint64_t size) {
 	return units[i];
 }
 
+int uptime_value(rtinfo_uptime_t *uptime) {
+	if(uptime->uptime < 3600)
+		return uptime->uptime / 60;
+	
+	if(uptime->uptime < 86400)
+		return uptime->uptime / 3600;
+	
+	return uptime->uptime / 86400;
+}
+
+char * uptime_unit(rtinfo_uptime_t *uptime) {
+	if(uptime->uptime < 3600)
+		return uptime_units[0];
+	
+	if(uptime->uptime < 86400)
+		return uptime_units[1];
+	
+	return uptime_units[2];
+}
+
 void split() {
 	attrset(COLOR_PAIR(6));
 	hline(ACS_HLINE, x - 2);
@@ -123,6 +145,8 @@ int localside() {
 	rtinfo_memory_t memory;
 	rtinfo_loadagv_t loadavg;
 	rtinfo_cpu_t *cpu;
+	
+	rtinfo_uptime_t uptime;
 	
 	rtinfo_battery_t battery;
 	int use_battery = 0;
@@ -205,6 +229,9 @@ int localside() {
 		if(use_battery && !rtinfo_get_battery(&battery))
 			return 1;
 		
+		if(!rtinfo_get_uptime(&uptime))
+			return 1;
+		
 		/* Reading Time Info */
 		timeinfo = rtinfo_get_time();
 		
@@ -223,7 +250,7 @@ int localside() {
 		
 		/* Uptime */
 		attrset(COLOR_PAIR(8));
-		printw("(Uptime: disabled)");
+		printw("(Uptime: %d %s)", uptime_value(&uptime), uptime_unit(&uptime));
 		
 		/* Time */
 		move(0, x - 10);

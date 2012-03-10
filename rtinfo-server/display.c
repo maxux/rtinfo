@@ -13,6 +13,7 @@
 
 extern int nbclients;
 char *units[] = {"Ko", "Mo", "Go", "To"};
+char *uptime_units[] = {"m", "h", "d"};
 
 int x, y;
 
@@ -77,7 +78,7 @@ void title(char *title, int length, char eol) {
 
 void split() {
 	attrset(COLOR_PAIR(2));
-	hline(ACS_HLINE, 128);
+	hline(ACS_HLINE, 138);
 }
 
 void refresh_whole() {
@@ -96,7 +97,8 @@ void show_header() {
 	title("SWAP", 12, 0);
 	title("Load Avg.", 17, 0);
 	title("Remote IP", 15, 0);
-	title("Time", 8, 1);
+	title("Time", 8, 0);
+	title("Uptime", 8, 1);
 	printw("\n");
 	
 	split();
@@ -151,6 +153,26 @@ char * unitround(uint64_t size) {
 	}
 	
 	return units[i];
+}
+
+int uptime_value(rtinfo_uptime_t *uptime) {
+	if(uptime->uptime < 3600)
+		return uptime->uptime / 60;
+	
+	if(uptime->uptime < 86400)
+		return uptime->uptime / 3600;
+	
+	return uptime->uptime / 86400;
+}
+
+char * uptime_unit(rtinfo_uptime_t *uptime) {
+	if(uptime->uptime < 3600)
+		return uptime_units[0];
+	
+	if(uptime->uptime < 86400)
+		return uptime_units[1];
+	
+	return uptime_units[2];
 }
 
 void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t *client) {
@@ -265,6 +287,10 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 	timeinfo = localtime((time_t*) &packed->timestamp);
 	printw("%02d:%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
 	
+	separe(1);
+	printw("% 4d %s", uptime_value(&packed->uptime), uptime_unit(&packed->uptime));
+	
+	clrtoeol();
 	refresh();
 }
 

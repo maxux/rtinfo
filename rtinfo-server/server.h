@@ -4,7 +4,6 @@
 	#include <time.h>
 	
 	#define BUFFER_SIZE		1024
-	#define SERVER_VERSION		3.0
 
 	typedef struct client_t {
 		int id;

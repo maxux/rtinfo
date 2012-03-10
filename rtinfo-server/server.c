@@ -84,7 +84,7 @@ void print_usage(char *app) {
 
 int main(int argc, char *argv[]) {
 	struct sockaddr_in si_me, remote;
-	int sockfd, cid = 0;
+	int sockfd, cid = 0, recvsize;
 	socklen_t slen = sizeof(remote);
 	
 	void *buffer = malloc(sizeof(char) * BUFFER_SIZE);	/* Data read */
@@ -189,9 +189,10 @@ int main(int argc, char *argv[]) {
 		diep("pthread_create");
 	
 	show_header();
+	show_net_header();
 	
 	while(1) {
-		if(recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *) &remote, &slen) == -1)
+		if((recvsize = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *) &remote, &slen)) == -1)
 			diep("recvfrom()");
 		
 		/* Checking ip --allowed */
@@ -228,7 +229,7 @@ int main(int argc, char *argv[]) {
 			/* Sending Server Version */
 			((netinfo_packed_t*) buffer)->loadavg.load[0] = SERVER_VERSION;
 			
-			if(sendto(sockfd, buffer, sizeof(netinfo_packed_t), 0, (const struct sockaddr *) &remote, sizeof(struct sockaddr_in)) == -1)
+			if(sendto(sockfd, buffer, recvsize, 0, (const struct sockaddr *) &remote, sizeof(struct sockaddr_in)) == -1)
 				diep("sendto");
 				
 			continue;
@@ -244,7 +245,7 @@ int main(int argc, char *argv[]) {
 			client->name[sizeof(client->name) - 1] = '\0';
 			
 			if(!stack_client(client)) {
-				fprintf(stderr, "Stacking client failed\n");
+				fprintf(stderr, "[-] stacking client failed\n");
 				return 1;
 			}
 			
