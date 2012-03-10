@@ -8,7 +8,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include "socket.h"
-#include "../librtinfo/misc.h"
+#include "rtinfo-client.h"
 
 int netinfo_socket(char *server, int port, struct sockaddr_in *remote) {
 	int sockfd;

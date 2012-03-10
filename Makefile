@@ -1,13 +1,15 @@
-all:
-	cd librtinfo && $(MAKE)
-	cd rtinfo && $(MAKE)
+all: client server
+
+client:
+	cd rtinfo-client && $(MAKE)
+	
+server:
 	cd rtinfo-server && $(MAKE)
 
 clean:
-	cd librtinfo && $(MAKE) clean
-	cd rtinfo && $(MAKE) clean
+	cd rtinfo-client && $(MAKE) clean
 	cd rtinfo-server && $(MAKE) clean
 
-mrproper: clean
-	cd rtinfo && $(MAKE) mrproper
+mrproper:
+	cd rtinfo-client && $(MAKE) mrproper
 	cd rtinfo-server && $(MAKE) mrproper

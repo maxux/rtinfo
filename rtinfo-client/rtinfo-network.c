@@ -4,9 +4,9 @@
 #include <string.h>
 #include <time.h>
 #include <netinet/in.h>
-#include "../librtinfo/sysinfo.h"
-#include "../librtinfo/misc.h"
+#include <rtinfo.h>
 #include "socket.h"
+#include "rtinfo-network.h"
 #include "rtinfo-client.h"
 
 /* void dump(char *s, int j) {
@@ -23,9 +23,9 @@
 
 int networkside(char *server, int port) {
 	netinfo_packed_t packed;
-	info_cpu_t *cpu;
+	rtinfo_cpu_t *cpu;
 	
-	info_network_t *truenet;
+	rtinfo_network_t *truenet;
 	int nbiface;
 	short legacy_size;
 	
@@ -38,7 +38,7 @@ int networkside(char *server, int port) {
 	int sockfd, i;
 	
 	printf("[+] Starting rtinfo network client (version %.2f)\n", CLIENT_VERSION);
-	printf("[ ] Compiled with librtinfo version %.2f\n", RTLIB_VERSION);
+	printf("[ ] Compiled with librtinfo version %.2f\n", rtinfo_version());
 	
 	/* Writing hostname on netinfo_packed_t */
 	if(gethostname(packed.hostname, sizeof(packed.hostname)))
@@ -47,7 +47,7 @@ int networkside(char *server, int port) {
 	/*
 	 * Initializing Network
 	 */
-	truenet = initinfo_network(&nbiface);
+	truenet = rtinfo_init_network(&nbiface);
 	
 	if(nbiface > 16) {
 		nbiface = 16;
@@ -55,7 +55,7 @@ int networkside(char *server, int port) {
 	}
 	
 	/* Calculate size of legacy_t required */
-	legacy_size = sizeof(info_network_legacy_t) * nbiface;
+	legacy_size = sizeof(rtinfo_network_legacy_t) * nbiface;
 	
 	/* Building 'netbuild' memory area with dynamic extra content
 	
@@ -84,7 +84,7 @@ int networkside(char *server, int port) {
 	/*
 	 * Initializing CPU
 	 */
-	cpu = initinfo_cpu(&packed.nbcpu);
+	cpu = rtinfo_init_cpu(&packed.nbcpu);
 	free(cpu);
 	
 	if(packed.nbcpu > 16) {
@@ -135,30 +135,30 @@ int networkside(char *server, int port) {
 	/* Working */
 	while(1) {	
 		/* Pre-reading data */
-		getinfo_cpu(packed.cpu, packed.nbcpu);
-		getinfo_network(truenet, netbuild_cast->nbiface);
+		rtinfo_get_cpu(packed.cpu, packed.nbcpu);
+		rtinfo_get_network(truenet, netbuild_cast->nbiface);
 
 		/* Sleeping */
 		usleep(UPDATE_INTERVAL);
 		
 		/* Reading CPU */
-		getinfo_cpu(packed.cpu, packed.nbcpu);
-		mkinfo_cpu_usage(packed.cpu, packed.nbcpu);
+		rtinfo_get_cpu(packed.cpu, packed.nbcpu);
+		rtinfo_mk_cpu_usage(packed.cpu, packed.nbcpu);
 		
 		/* Reading Network */
-		getinfo_network(truenet, netbuild_cast->nbiface);
-		mkinfo_network_usage(truenet, netbuild_cast->nbiface, UPDATE_INTERVAL / 1000);
+		rtinfo_get_network(truenet, netbuild_cast->nbiface);
+		rtinfo_mk_network_usage(truenet, netbuild_cast->nbiface, UPDATE_INTERVAL / 1000);
 		
 		/* Reading Memory */
-		if(!getinfo_memory(&packed.memory))
+		if(!rtinfo_get_memory(&packed.memory))
 			return 1;
 		
 		/* Reading Load Average */
-		if(!getinfo_loadavg(&packed.loadavg))
+		if(!rtinfo_get_loadavg(&packed.loadavg))
 			return 1;
 		
 		/* Reading Battery State */
-		/* if(!getinfo_battery(&battery))
+		/* if(!rtinfo_get_battery(&battery))
 			return 1; */
 		
 		/* Reading Time Info */

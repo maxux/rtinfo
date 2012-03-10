@@ -1,34 +1,33 @@
-librtinfo / rtinfo / rtinfo-server
-==================================
+   rtinfo-client / rtinfo-server
+===================================
 
-	librtinfo is a very small library (~400 lines of C) to monitor the health of a linux system 
-	rtinfo is able to monitor locally or remotely via udp
-	rtinfo-server is an ncurses-based ui displaying rtinfo remote information
+	rtinfo-client is able to monitor locally or remotely via udp using librtinfo
+	rtinfo-server is an ncurses-based ui displaying rtinfo-client remote information
 
 Dependencies
 ===========
 
-	librtinfo just requires some linux headers
-	rtinfo depends on librtinfo
+	rtinfo-client depends on librtinfo
 	rtinfo-server depends on libncurses
+	both of them depends on librtinfo (http://git.maxux.net/librtinfo)
 
 How to use it
 =============
 
 	The easy way is to type `make` inside rtinfo's root directory.
-	If you want to compile only a specific part of the project, you can run `make` inside each corresponding folder.
+	If you want to compile only a specific part of the project, you can run `make` inside each corresponding folder (or make client / make server).
 	
 	There is no `make install` function at this time.
 	
 	
-	To use rtinfo, just launch rtinfo/rtinfo, without any arguments. This will display your local system information.
-	If you want to connect rtinfo to a server, just pass the server ip as the first argument:
-		$ ./rtinfo 127.0.0.1 [port]
+	To use rtinfo, just launch ./rtinfo-client/rtinfo-client, without any arguments. This will display your local system information.
+	If you want to connect rtinfo-client to a server, just pass the server ip as the first argument:
+		$ ./rtinfo-client/rtinfo-client 127.0.0.1 [port]
 	
 	To start the server: 
-		$ ./server [port]
+		$ ./rtinfo-server/rtinfo-server [--port] [--allow]
 	
-	Port argument is optional. 
+	Port and allow arguments is optional.
 	
 	Warning: there is no encryption for the udp packets. If you are on a dangerous network, please consider 
 	         using rtinfo over an ssh tunnel or an encrypted vpn.

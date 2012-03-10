@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <ncurses.h>
-#include "../rtinfo/socket.h"
+#include "socket.h"
 #include "server.h"
 #include "display.h"
 

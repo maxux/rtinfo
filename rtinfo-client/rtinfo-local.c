@@ -4,8 +4,8 @@
 #include <time.h>
 #include <signal.h>
 #include <ncurses.h>
-#include "../librtinfo/sysinfo.h"
-#include "../librtinfo/misc.h"
+#include <rtinfo.h>
+#include "rtinfo-client.h"
 #include "rtinfo-local.h"
 
 #define RATE_COLD	(A_BOLD | COLOR_PAIR(5))
@@ -120,15 +120,15 @@ void split() {
 }
 
 int localside() {
-	info_memory_t memory;
-	info_loadagv_t loadavg;
-	info_cpu_t *cpu;
+	rtinfo_memory_t memory;
+	rtinfo_loadagv_t loadavg;
+	rtinfo_cpu_t *cpu;
 	
-	info_battery_t battery;
+	rtinfo_battery_t battery;
 	int use_battery = 0;
 	char *battery_picto = "=+-";
 	
-	info_network_t *net;
+	rtinfo_network_t *net;
 	float memory_percent, swap_percent;
 	
 	int nbcpu, nbiface, i;
@@ -167,8 +167,8 @@ int localside() {
 	signal(SIGWINCH, dummy);
 	
 	/* Initializing variables */
-	net = initinfo_network(&nbiface);
-	cpu = initinfo_cpu(&nbcpu);
+	net = rtinfo_init_network(&nbiface);
+	cpu = rtinfo_init_cpu(&nbcpu);
 	
 	/* Loading curses */
 	getmaxyx(stdscr, y, x);
@@ -179,34 +179,34 @@ int localside() {
 	/* Working */	
 	while(1) {	
 		/* Pre-reading data */
-		getinfo_cpu(cpu, nbcpu);
-		getinfo_network(net, nbiface);
+		rtinfo_get_cpu(cpu, nbcpu);
+		rtinfo_get_network(net, nbiface);
 
 		/* Sleeping */
 		usleep(UPDATE_INTERVAL);
 		
 		/* Reading CPU */
-		getinfo_cpu(cpu, nbcpu);
-		mkinfo_cpu_usage(cpu, nbcpu);
+		rtinfo_get_cpu(cpu, nbcpu);
+		rtinfo_mk_cpu_usage(cpu, nbcpu);
 		
 		/* Reading Network */
-		getinfo_network(net, nbiface);
-		mkinfo_network_usage(net, nbiface, UPDATE_INTERVAL / 1000);
+		rtinfo_get_network(net, nbiface);
+		rtinfo_mk_network_usage(net, nbiface, UPDATE_INTERVAL / 1000);
 		
 		/* Reading Memory */
-		if(!getinfo_memory(&memory))
+		if(!rtinfo_get_memory(&memory))
 			return 1;
 		
 		/* Reading Load Average */
-		if(!getinfo_loadavg(&loadavg))
+		if(!rtinfo_get_loadavg(&loadavg))
 			return 1;
 		
 		/* Reading Battery State */
-		if(use_battery && !getinfo_battery(&battery))
+		if(use_battery && !rtinfo_get_battery(&battery))
 			return 1;
 		
 		/* Reading Time Info */
-		timeinfo = getinfo_time();
+		timeinfo = rtinfo_get_time();
 		
 		/*
 		 * ncurses data printing

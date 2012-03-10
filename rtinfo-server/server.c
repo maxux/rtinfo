@@ -31,7 +31,7 @@
 #include <signal.h>
 #include <pthread.h>
 #include <getopt.h>
-#include "../rtinfo/socket.h"
+#include "socket.h"
 #include "server.h"
 #include "display.h"
 #include "stack.h"

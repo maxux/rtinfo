@@ -1,7 +1,7 @@
 #ifndef __RTSOCKET_H
 	#define __RTSOCKET_H
 	
-	#include "../librtinfo/sysinfo.h"
+	#include <rtinfo.h>
 	#include <netinet/in.h>
 	
 	#define DEFAULT_PORT	9930
@@ -21,13 +21,13 @@
 	typedef struct netinfo_packed_t {
 		netinfo_options_t options;
 		char hostname[32];
-		int clientid		__attribute__ ((packed));
-		int nbcpu		__attribute__ ((packed));
-		info_cpu_t cpu[16];	/* At this time, limited to 16 CPU */
-		info_memory_t memory	__attribute__ ((packed));
-		info_loadagv_t loadavg	__attribute__ ((packed));
-		info_battery_t battery	__attribute__ ((packed));
-		uint64_t timestamp	__attribute__ ((packed));
+		int clientid			__attribute__ ((packed));
+		int nbcpu			__attribute__ ((packed));
+		rtinfo_cpu_t cpu[16];		/* At this time, limited to 16 CPU */
+		rtinfo_memory_t memory		__attribute__ ((packed));
+		rtinfo_loadagv_t loadavg	__attribute__ ((packed));
+		rtinfo_battery_t battery	__attribute__ ((packed));
+		uint64_t timestamp		__attribute__ ((packed));
 		
 	} netinfo_packed_t;
 	
@@ -35,7 +35,7 @@
 		netinfo_options_t options;
 		char hostname[32];
 		int nbiface;
-		info_network_legacy_t net[];	/* Warning: limited to 16 interfaces */
+		rtinfo_network_legacy_t net[];	/* Warning: limited to 16 interfaces */
 		
 	} netinfo_packed_net_t;
 	
