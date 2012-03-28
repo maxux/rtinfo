@@ -147,6 +147,7 @@ int localside() {
 	rtinfo_cpu_t *cpu;
 	
 	rtinfo_uptime_t uptime;
+	rtinfo_temp_t temperature;
 	
 	rtinfo_battery_t battery;
 	int use_battery = 0;
@@ -163,6 +164,12 @@ int localside() {
 	/* Reading hostname */
 	if(gethostname(hostname, sizeof(hostname)))
 		diep("gethostname");
+	
+	
+	
+	/* printf("Average: %d°C\n", temperature.cpu_average);
+		
+	return 0; */
 	
 	/* Init Console */
 	initscr();		/* Init ncurses */
@@ -232,6 +239,9 @@ int localside() {
 		if(!rtinfo_get_uptime(&uptime))
 			return 1;
 		
+		if(!rtinfo_get_temp(&temperature))
+			return 1;
+		
 		/* Reading Time Info */
 		timeinfo = rtinfo_get_time();
 		
@@ -279,6 +289,20 @@ int localside() {
 			
 			if(i == 0)
 				separe(1);
+		}
+		
+		/* Print CPU Temperature */
+		if(temperature.cpu_average > 0) {
+			if(temperature.cpu_average > 85)
+				attrset(LEVEL_HIGH);
+				
+			else if(temperature.cpu_average > 55)
+				attrset(LEVEL_WARN);
+				
+			else attrset(LEVEL_COLD);
+			
+			printw(" (%d°C)", temperature.cpu_average);
+			attrset(COLOR_PAIR(1));
 		}
 		
 		/* Print Memory Usage */

@@ -4,9 +4,11 @@
 #include <unistd.h>
 #include <time.h>
 #include <ncurses.h>
-#include "socket.h"
+#include <pthread.h>
 #include "server.h"
 #include "stack.h"
+#include "socket.h"
+#include "display.h"
 
 extern client_t *clients;
 extern int nbclients;
@@ -68,12 +70,14 @@ void * stack_ping(void *dummy) {
 		
 		while(temp) {
 			if(t - 30 > temp->last) {
+				/* Locking screen */
+				pthread_mutex_lock(&mutex_screen);
+				
 				move(temp->id + 2, 0);
 				
-				clrtoeol();
 				attrset(A_BOLD | COLOR_PAIR(4));
 				
-				printw(" %-14s | Ping timeout", temp->name);
+				printw(" %-14s ", temp->name);
 				
 				move(nbclients + 5 + temp->line, 0);
 		
@@ -84,6 +88,9 @@ void * stack_ping(void *dummy) {
 					
 				attrset(COLOR_PAIR(1));
 				refresh();
+				
+				/* Unlocking screen */
+				pthread_mutex_unlock(&mutex_screen);
 			}
 			
 			temp = temp->next;

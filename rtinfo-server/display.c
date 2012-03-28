@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <ncurses.h>
+#include <pthread.h>
 #include "socket.h"
 #include "server.h"
 #include "display.h"
@@ -14,6 +15,8 @@
 extern int nbclients;
 char *units[] = {"Ko", "Mo", "Go", "To"};
 char *uptime_units[] = {"m", "h", "d"};
+
+pthread_mutex_t mutex_screen;
 
 int x, y;
 
@@ -37,6 +40,19 @@ int cpu_limit[] = {
 		50,	/* 50% | Yellow */
 		85,	/* 85% | Red	*/
 };
+
+int temp_limit[] = {
+	55,		/* 55°C | Yellow */
+	85,		/* 85°C | Red	 */
+};
+
+int battery_limit[] = {
+	10,		/* 10%  | Red	 */
+	20,		/* 20%  | Yellow */
+	99,		/* 99%	| Grey	 */
+};
+
+char *battery_picto = "=+-";
 
 #define RATE_COLD	(A_BOLD | COLOR_PAIR(5))
 #define RATE_ACTIVE	(A_BOLD | COLOR_PAIR(8))
@@ -78,7 +94,7 @@ void title(char *title, int length, char eol) {
 
 void split() {
 	attrset(COLOR_PAIR(2));
-	hline(ACS_HLINE, 138);
+	hline(ACS_HLINE, 136);
 }
 
 void refresh_whole() {
@@ -92,13 +108,15 @@ void show_header() {
 	getmaxyx(stdscr, y, x);
 	
 	title("Hostname", 14, 0);
-	title("CPU Usage", 28, 0);
+	title("CPU", 5, 0);
 	title("RAM", 14, 0);
 	title("SWAP", 12, 0);
-	title("Load Avg.", 17, 0);
+	title("Load Avg.", 20, 0);
 	title("Remote IP", 15, 0);
 	title("Time", 8, 0);
-	title("Uptime", 8, 1);
+	title("Uptime", 6, 0);
+	title("Bat.", 6, 0);
+	title("Coretemp", 10, 1);
 	printw("\n");
 	
 	split();
@@ -180,6 +198,9 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 	float memory_percent, swap_percent;
 	struct tm * timeinfo;
 	
+	/* Locking screen */
+	pthread_mutex_lock(&mutex_screen);
+	
 	move(client->id + 2, 0);
 	
 	attrset(COLOR_PAIR(1));
@@ -191,28 +212,21 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 	/* Print CPU Usage */
 	separe(1);
 	
-	for(i = 0; i < packed->nbcpu; i++) {
-		if(packed->cpu[i].usage > 85)
-			attrset(LEVEL_HIGH);
-			
-		else if(packed->cpu[i].usage > 50)
-			attrset(LEVEL_WARN);
+	/* Only print Average */
+	if(packed->cpu[0].usage > cpu_limit[2])
+		attrset(LEVEL_HIGH);
 		
-		else if(packed->cpu[i].usage > 30)
-			attrset(LEVEL_ACTIVE);
-			
-		else attrset(LEVEL_COLD);
-		
-		printw("%3d%% ", packed->cpu[i].usage);
-		attrset(COLOR_PAIR(1));
-		
-		if(i == 0)
-			separe(1);
-	}
+	else if(packed->cpu[0].usage > cpu_limit[1])
+		attrset(LEVEL_WARN);
 	
-	if(packed->nbcpu < 4)
-		for(; i < 5; i++)
-			printw("     ");
+	else if(packed->cpu[0].usage > cpu_limit[0])
+		attrset(LEVEL_ACTIVE);
+		
+	else attrset(LEVEL_COLD);
+	
+	printw("%3d%% ", packed->cpu[0].usage);
+	attrset(COLOR_PAIR(1));
+	
 	
 	/* Print Memory Usage */
 	separe(1);
@@ -270,7 +284,7 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 		
 		else attrset(LEVEL_COLD);
 		
-		printw("% 2.2f ", packed->loadavg.load[i]);
+		printw("% 6.2f ", packed->loadavg.load[i]);
 	}
 	
 	separe(0);
@@ -287,11 +301,50 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 	timeinfo = localtime((time_t*) &packed->timestamp);
 	printw("%02d:%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
 	
+	/* Print remote uptime */
 	separe(1);
 	printw("% 4d %s", uptime_value(&packed->uptime), uptime_unit(&packed->uptime));
 	
+	/* Print remote battery status */
+	separe(1);
+	if(packed->battery.load != -1) {
+		if(packed->battery.load < battery_limit[0])
+			attrset(LEVEL_HIGH);
+			
+		else if(packed->battery.load < battery_limit[1])
+			attrset(LEVEL_WARN);
+		
+		else if(packed->battery.load < battery_limit[2])
+			attrset(LEVEL_ACTIVE);
+		
+		else attrset(LEVEL_COLD);
+		
+		printw("%c% 4d%%%", battery_picto[packed->battery.status], packed->battery.load);
+		
+	} else printw("      ");
+	
+	/* Print remote coretemp value */
+	separe(1);
+	if(packed->temperature.cpu_average > 0) {
+		if(packed->temperature.cpu_average > temp_limit[1])
+			attrset(LEVEL_HIGH);
+		
+		else if(packed->temperature.cpu_average > temp_limit[0])
+			attrset(LEVEL_WARN);
+			
+		else attrset(LEVEL_COLD);
+		
+		printw("% 3d°C", packed->temperature.cpu_average);
+		
+	} else printw("      ");
+	// printw("% 4d %s", uptime_value(&packed->uptime), uptime_unit(&packed->uptime));
+	
+	/* End of line */
 	clrtoeol();
 	refresh();
+	
+	/* Unlocking screen */
+	pthread_mutex_unlock(&mutex_screen);
 }
 
 void show_packet_network(netinfo_packed_net_t *net, struct sockaddr_in *remote, client_t *client) {
@@ -302,7 +355,10 @@ void show_packet_network(netinfo_packed_net_t *net, struct sockaddr_in *remote, 
 	/* Console too small */
 	if(nbclients + 5 + client->line + client->nbiface > y)
 		return;
-		
+	
+	/* Locking screen */
+	pthread_mutex_lock(&mutex_screen);
+	
 	move(nbclients + 5 + client->line, 0);
 	
 	for(i = 0; i < net->nbiface; i++) {
@@ -379,4 +435,7 @@ void show_packet_network(netinfo_packed_net_t *net, struct sockaddr_in *remote, 
 	
 	clrtoeol();
 	refresh();
+	
+	/* Unlocking screen */
+	pthread_mutex_unlock(&mutex_screen);
 }

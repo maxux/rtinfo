@@ -180,8 +180,11 @@ int networkside(char *server, int port) {
 			return 1;
 		
 		/* Reading Battery State */
-		/* if(!rtinfo_get_battery(&battery))
-			return 1; */
+		if(!rtinfo_get_battery(&packed_cast->battery))
+			return 1;
+		
+		if(!rtinfo_get_temp(&packed_cast->temperature))
+			return 1;
 		
 		/* Reading Time Info */
 		time((time_t*) &packed_cast->timestamp);

@@ -31,6 +31,7 @@
 #include <signal.h>
 #include <pthread.h>
 #include <getopt.h>
+#include <time.h>
 #include "socket.h"
 #include "server.h"
 #include "display.h"
@@ -39,6 +40,8 @@
 
 client_t *clients = NULL;
 int nbclients = 0;
+
+pthread_mutex_t mutex_clients;
 
 static struct option long_options[] = {
 	{"allow",	required_argument, 0, 'a'},
@@ -82,6 +85,46 @@ void print_usage(char *app) {
 	exit(1);
 }
 
+///
+/// SIG HANDLER
+///
+void * input_handler(void *dummy) {
+	int ch = 0;
+	int sub;
+	client_t *temp, *prev;
+	time_t t;
+	
+	while(1) {
+		ch = getch();
+		
+		switch(ch) {
+			case 'd':
+				sub = 0;
+				
+				time(&t);
+				prev = NULL;
+				
+				pthread_mutex_lock(&mutex_clients);
+				
+				temp = clients;
+				
+				while(temp) {
+					temp->id -= sub;
+					
+					if(t - 30 > temp->last) {
+						unstack_client(temp);
+						sub++;
+					}
+				}			
+
+				pthread_mutex_unlock(&mutex_clients);
+			break;
+		}
+	}
+	
+	return dummy;
+}
+
 int main(int argc, char *argv[]) {
 	struct sockaddr_in si_me, remote;
 	int sockfd, cid = 0, recvsize;
@@ -90,7 +133,7 @@ int main(int argc, char *argv[]) {
 	void *buffer = malloc(sizeof(char) * BUFFER_SIZE);	/* Data read */
 	
 	client_t *client;
-	pthread_t ping;
+	pthread_t thread_ping;
 	
 	/* ip allowed */
 	unsigned int *mask = NULL, *baseip = NULL;
@@ -185,7 +228,7 @@ int main(int argc, char *argv[]) {
 		diep("bind");
 	
 	/* Starting Ping Thread */
-	if(pthread_create(&ping, NULL, stack_ping, NULL))
+	if(pthread_create(&thread_ping, NULL, stack_ping, NULL))
 		diep("pthread_create");
 	
 	show_header();
