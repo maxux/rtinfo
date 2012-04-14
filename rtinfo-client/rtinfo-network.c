@@ -145,8 +145,11 @@ int networkside(char *server, int port) {
 	/*
 	 * Building options
 	 */
-	packed_cast->options         = USE_MEMORY | USE_LOADAVG | USE_TIME;	/* FIXME: Not used at this time */
+	packed_cast->options   = USE_MEMORY | USE_LOADAVG | USE_TIME;	/* FIXME: Not used at this time */
 	netbuild_cast->options = USE_NETWORK;
+	
+	packed_cast->version   = CLIENT_VERSION;
+	netbuild_cast->version = CLIENT_VERSION;
 	
 	printf("[+] Sending data...\n");
 	
@@ -180,10 +183,13 @@ int networkside(char *server, int port) {
 			return 1;
 		
 		/* Reading Battery State */
-		if(!rtinfo_get_battery(&packed_cast->battery))
+		if(!rtinfo_get_battery(&packed_cast->battery, NULL))
 			return 1;
 		
-		if(!rtinfo_get_temp(&packed_cast->temperature))
+		if(!rtinfo_get_temp_cpu(&packed_cast->temp_cpu))
+			return 1;
+		
+		if(!rtinfo_get_temp_hdd(&packed_cast->temp_hdd))
 			return 1;
 		
 		/* Reading Time Info */

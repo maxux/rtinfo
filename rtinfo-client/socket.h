@@ -14,32 +14,43 @@
 		USE_LOADAVG	= 8,
 		USE_BATTERY	= 16,
 		USE_TIME	= 32,
-		USE_NETWORK	= 64
+		USE_NETWORK	= 64,
+		
+		USE_DEBUG	= 131072
 		
 	} netinfo_options_t;
 	
 	typedef struct netinfo_packed_t {
+		/* Common Packed/Net */
 		netinfo_options_t options;
 		char hostname[32];
-		int clientid			__attribute__ ((packed));
-		int nbcpu			__attribute__ ((packed));
-		rtinfo_memory_t memory		__attribute__ ((packed));
-		rtinfo_loadagv_t loadavg	__attribute__ ((packed));
-		rtinfo_battery_t battery	__attribute__ ((packed));
-		rtinfo_temp_t temperature	__attribute__ ((packed));
-		rtinfo_uptime_t uptime		__attribute__ ((packed));
-		uint64_t timestamp		__attribute__ ((packed));
+		int clientid;
+		float version;
+		
+		/* Specific */
+		int nbcpu;
+		rtinfo_memory_t memory;
+		rtinfo_loadagv_t loadavg;
+		rtinfo_battery_t battery;
+		rtinfo_temp_cpu_t temp_cpu;
+		rtinfo_temp_hdd_t temp_hdd;
+		rtinfo_uptime_t uptime;
+		uint64_t timestamp;
 		rtinfo_cpu_t cpu[];		/* Warning: limited to 15 cpu */
 		
-	} netinfo_packed_t;
+	} __attribute__ ((packed)) netinfo_packed_t;
 	
 	typedef struct netinfo_packed_net_t {
+		/* Common Packed/Net */
 		netinfo_options_t options;
 		char hostname[32];
 		int nbiface;
+		float version;
+		
+		/* Specific */
 		rtinfo_network_legacy_t net[];	/* Warning: limited to 16 interfaces */
 		
-	} netinfo_packed_net_t;
+	} __attribute__ ((packed)) netinfo_packed_net_t;
 	
 	int netinfo_socket(char *server, int port, struct sockaddr_in *remote);
 	int netinfo_send(int sockfd, void *packed, size_t size, const struct sockaddr_in *remote);

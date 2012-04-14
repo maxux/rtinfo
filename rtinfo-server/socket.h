@@ -19,14 +19,19 @@
 	} netinfo_options_t;
 	
 	typedef struct netinfo_packed_t {
+		/* Common Packed/Net */
 		netinfo_options_t options;
 		char hostname[32];
 		int clientid			__attribute__ ((packed));
+		float version			__attribute__ ((packed));
+		
+		/* Specific */
 		int nbcpu			__attribute__ ((packed));
 		rtinfo_memory_t memory		__attribute__ ((packed));
 		rtinfo_loadagv_t loadavg	__attribute__ ((packed));
 		rtinfo_battery_t battery	__attribute__ ((packed));
-		rtinfo_temp_t temperature	__attribute__ ((packed));
+		rtinfo_temp_cpu_t temp_cpu	__attribute__ ((packed));
+		rtinfo_temp_hdd_t temp_hdd	__attribute__ ((packed));
 		rtinfo_uptime_t uptime		__attribute__ ((packed));
 		uint64_t timestamp		__attribute__ ((packed));
 		rtinfo_cpu_t cpu[];		/* Warning: limited to 15 cpu */
@@ -34,9 +39,13 @@
 	} netinfo_packed_t;
 	
 	typedef struct netinfo_packed_net_t {
+		/* Common Packed/Net */
 		netinfo_options_t options;
 		char hostname[32];
-		int nbiface;
+		int nbiface		__attribute__ ((packed));
+		float version		__attribute__ ((packed));
+		
+		/* Specific */
 		rtinfo_network_legacy_t net[];	/* Warning: limited to 16 interfaces */
 		
 	} netinfo_packed_net_t;

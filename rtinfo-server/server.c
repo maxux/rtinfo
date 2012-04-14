@@ -32,6 +32,7 @@
 #include <pthread.h>
 #include <getopt.h>
 #include <time.h>
+#include <rtinfo.h>
 #include "socket.h"
 #include "server.h"
 #include "display.h"
@@ -125,22 +126,45 @@ void * input_handler(void *dummy) {
 	return dummy;
 }
 
+void error_print(char *message) {
+	int x, y;
+	
+	pthread_mutex_lock(&mutex_clients);
+	
+	getmaxyx(stdscr, y, x);			
+	move(y - 1, 0);
+	
+	attrset(A_BOLD | COLOR_PAIR(4));
+	printw(message);
+	attrset(A_BOLD | COLOR_PAIR(1));
+	
+	clrtoeol();
+	refresh();
+	
+	pthread_mutex_unlock(&mutex_clients);
+}
+
 int main(int argc, char *argv[]) {
 	struct sockaddr_in si_me, remote;
 	int sockfd, cid = 0, recvsize;
 	socklen_t slen = sizeof(remote);
-	
+	char temp[256];
 	void *buffer = malloc(sizeof(char) * BUFFER_SIZE);	/* Data read */
 	
 	client_t *client;
-	pthread_t thread_ping;
+	pthread_t thread_ping, thread_input;
 	
 	/* ip allowed */
 	unsigned int *mask = NULL, *baseip = NULL;
-	int nballow = 0, i, x, y;
+	int nballow = 0, i;
 	int port = DEFAULT_PORT;
 	
 	int option_index = 0;
+	
+	if((int) rtinfo_version() != (int) REQUIRED_LIB_VERSION || rtinfo_version() < REQUIRED_LIB_VERSION) {
+		fprintf(stderr, "[-] Require librtinfo 3 (>= %.2f)\n", REQUIRED_LIB_VERSION);
+		return 1;
+	}
 	
 	/* Parsing options */
 	while(1) {
@@ -231,6 +255,10 @@ int main(int argc, char *argv[]) {
 	if(pthread_create(&thread_ping, NULL, stack_ping, NULL))
 		diep("pthread_create");
 	
+	/* Starting CLI Thread */
+	/* if(pthread_create(&thread_input, NULL, input_handler, NULL))
+		diep("pthread_create"); */
+	
 	show_header();
 	show_net_header();
 	
@@ -249,14 +277,8 @@ int main(int argc, char *argv[]) {
 			
 			/* ip disallowed */
 			if(i != -1) {
-				getmaxyx(stdscr, y, x);			
-				move(y - 1, 0);
-				
-				attrset(A_BOLD | COLOR_PAIR(4));
-				printw("Warning: denied packed received from: %s", inet_ntoa(remote.sin_addr));
-				attrset(A_BOLD | COLOR_PAIR(1));
-				
-				refresh();
+				sprintf(temp, "Warning: denied packed received from: %s", inet_ntoa(remote.sin_addr));
+				error_print(temp);
 				
 				continue;
 			}
@@ -275,6 +297,20 @@ int main(int argc, char *argv[]) {
 			if(sendto(sockfd, buffer, recvsize, 0, (const struct sockaddr *) &remote, sizeof(struct sockaddr_in)) == -1)
 				diep("sendto");
 				
+			continue;
+		}
+		
+		/* Version Check */
+		if((int) ((netinfo_packed_t*) buffer)->version != (int) SERVER_VERSION) {
+			sprintf(temp, "Warning: invalid version (%f) from %s", ((netinfo_packed_t*) buffer)->version, inet_ntoa(remote.sin_addr));
+			error_print(temp);
+			continue;
+		}
+		
+		/* Small Overflow Check */
+		if(((netinfo_packed_t*) buffer)->options != USE_NETWORK && ((netinfo_packed_t*) buffer)->nbcpu > 24) {
+			sprintf(temp, "Warning: wrong cpu count (%d) from %s, rejected.", ((netinfo_packed_t*) buffer)->nbcpu, inet_ntoa(remote.sin_addr));
+			error_print(temp);
 			continue;
 		}
 		
@@ -299,7 +335,7 @@ int main(int argc, char *argv[]) {
 		
 		time(&client->last);
 		
-		if(((netinfo_packed_t*) buffer)->options & USE_NETWORK)	{
+		if(((netinfo_packed_t*) buffer)->options == USE_NETWORK) {
 			client->nbiface = ((netinfo_packed_net_t*) buffer)->nbiface + 1;
 			show_packet_network((netinfo_packed_net_t*) buffer, &remote, client);
 

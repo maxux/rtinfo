@@ -41,9 +41,9 @@ int cpu_limit[] = {
 		85,	/* 85% | Red	*/
 };
 
-int temp_limit[] = {
-	55,		/* 55°C | Yellow */
-	85,		/* 85°C | Red	 */
+int hdd_limit[] = {
+	39,		/* 55°C | Yellow */
+	46,		/* 85°C | Red	 */
 };
 
 int battery_limit[] = {
@@ -94,7 +94,7 @@ void title(char *title, int length, char eol) {
 
 void split() {
 	attrset(COLOR_PAIR(2));
-	hline(ACS_HLINE, 136);
+	hline(ACS_HLINE, 150);
 }
 
 void refresh_whole() {
@@ -108,15 +108,15 @@ void show_header() {
 	getmaxyx(stdscr, y, x);
 	
 	title("Hostname", 14, 0);
-	title("CPU", 5, 0);
+	title("CPU / Nb", 8, 0);
 	title("RAM", 14, 0);
 	title("SWAP", 12, 0);
 	title("Load Avg.", 20, 0);
 	title("Remote IP", 15, 0);
 	title("Time", 8, 0);
 	title("Uptime", 6, 0);
-	title("Bat.", 6, 0);
-	title("Coretemp", 10, 1);
+	title("Bat.", 5, 0);
+	title("CPU / HDD Temp", 10, 1);
 	printw("\n");
 	
 	split();
@@ -224,7 +224,7 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 		
 	else attrset(LEVEL_COLD);
 	
-	printw("%3d%% ", packed->cpu[0].usage);
+	printw("%3d%%/% 2d ", packed->cpu[0].usage, packed->nbcpu - 1);
 	attrset(COLOR_PAIR(1));
 	
 	
@@ -308,36 +308,73 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 	/* Print remote battery status */
 	separe(1);
 	if(packed->battery.load != -1) {
-		if(packed->battery.load < battery_limit[0])
-			attrset(LEVEL_HIGH);
+		if(packed->battery.status != CHARGING) {
+			if(packed->battery.load < battery_limit[0])
+				attrset(LEVEL_HIGH);
+				
+			else if(packed->battery.load < battery_limit[1])
+				attrset(LEVEL_WARN);
 			
-		else if(packed->battery.load < battery_limit[1])
-			attrset(LEVEL_WARN);
+			else if(packed->battery.load < battery_limit[2])
+				attrset(LEVEL_ACTIVE);
+			
+			else attrset(LEVEL_COLD);
+			
+		} else attrset(RATE_LOW);
 		
-		else if(packed->battery.load < battery_limit[2])
-			attrset(LEVEL_ACTIVE);
+		printw("%c%3d%%%", battery_picto[packed->battery.status], packed->battery.load);
 		
-		else attrset(LEVEL_COLD);
-		
-		printw("%c% 4d%%%", battery_picto[packed->battery.status], packed->battery.load);
-		
-	} else printw("      ");
+	} else {
+		attrset(A_BOLD | COLOR_PAIR(8));	/* Magenta */
+		printw("AC   ");
+	}
 	
 	/* Print remote coretemp value */
 	separe(1);
-	if(packed->temperature.cpu_average > 0) {
-		if(packed->temperature.cpu_average > temp_limit[1])
+	
+	if(!packed->temp_cpu.critical)
+		packed->temp_cpu.critical = 100;
+		
+	if(packed->temp_cpu.cpu_average > 0) {
+		if(packed->temp_cpu.cpu_average > packed->temp_cpu.critical * 0.8)
 			attrset(LEVEL_HIGH);
 		
-		else if(packed->temperature.cpu_average > temp_limit[0])
+		else if(packed->temp_cpu.cpu_average > packed->temp_cpu.critical * 0.6)
 			attrset(LEVEL_WARN);
 			
 		else attrset(LEVEL_COLD);
 		
-		printw("% 3d°C", packed->temperature.cpu_average);
+		printw("% 3d°C", packed->temp_cpu.cpu_average);
+		
+	} else printw("     ");
+	
+	attrset(LEVEL_COLD);
+	printw(" / ");
+	
+	if(packed->temp_hdd.hdd_average > 0) {
+		if(packed->temp_hdd.hdd_average > hdd_limit[1])
+			attrset(LEVEL_HIGH);
+		
+		else if(packed->temp_hdd.hdd_average > hdd_limit[0])
+			attrset(LEVEL_WARN);
+			
+		else attrset(LEVEL_COLD);
+		
+		printw("% 2d°C ", packed->temp_hdd.hdd_average);
+	}
+	
+	if(packed->temp_hdd.peak > 0) {
+		if(packed->temp_hdd.peak > hdd_limit[1])
+			attrset(LEVEL_HIGH);
+		
+		else if(packed->temp_hdd.peak > hdd_limit[0])
+			attrset(LEVEL_WARN);
+			
+		else attrset(LEVEL_COLD);
+		
+		printw("(%d°C)", packed->temp_hdd.peak);
 		
 	} else printw("      ");
-	// printw("% 4d %s", uptime_value(&packed->uptime), uptime_unit(&packed->uptime));
 	
 	/* End of line */
 	clrtoeol();

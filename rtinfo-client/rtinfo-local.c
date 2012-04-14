@@ -147,10 +147,9 @@ int localside() {
 	rtinfo_cpu_t *cpu;
 	
 	rtinfo_uptime_t uptime;
-	rtinfo_temp_t temperature;
+	rtinfo_temp_cpu_t temperature;
 	
 	rtinfo_battery_t battery;
-	int use_battery = 0;
 	char *battery_picto = "=+-";
 	
 	rtinfo_network_t *net;
@@ -164,12 +163,6 @@ int localside() {
 	/* Reading hostname */
 	if(gethostname(hostname, sizeof(hostname)))
 		diep("gethostname");
-	
-	
-	
-	/* printf("Average: %d°C\n", temperature.cpu_average);
-		
-	return 0; */
 	
 	/* Init Console */
 	initscr();		/* Init ncurses */
@@ -233,13 +226,13 @@ int localside() {
 			return 1;
 		
 		/* Reading Battery State */
-		if(use_battery && !rtinfo_get_battery(&battery))
+		if(!rtinfo_get_battery(&battery, NULL))
 			return 1;
 		
 		if(!rtinfo_get_uptime(&uptime))
 			return 1;
 		
-		if(!rtinfo_get_temp(&temperature))
+		if(!rtinfo_get_temp_cpu(&temperature))
 			return 1;
 		
 		/* Reading Time Info */
@@ -301,7 +294,7 @@ int localside() {
 				
 			else attrset(LEVEL_COLD);
 			
-			printw(" (%d°C)", temperature.cpu_average);
+			printw(" (%d°C [%d°C])", temperature.cpu_average, temperature.critical);
 			attrset(COLOR_PAIR(1));
 		}
 		
@@ -375,7 +368,7 @@ int localside() {
 		attrset(TITLE_STYLE);
 		printw("Battery    : ");
 		
-		if(use_battery) {
+		if(battery.load > -1) {
 			if(battery.load < 10)
 				attrset(LEVEL_HIGH);
 				
@@ -387,7 +380,7 @@ int localside() {
 				
 			else attrset(LEVEL_COLD);
 			
-			printw("%c%d%% (" BATTERY_NAME ")", battery_picto[battery.status], battery.load);
+			printw("%c%d%% ", battery_picto[battery.status], battery.load);
 		} else {
 			attrset(LEVEL_COLD);
 			printw("none");
