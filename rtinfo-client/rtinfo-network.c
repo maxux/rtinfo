@@ -5,6 +5,7 @@
 #include <time.h>
 #include <netinet/in.h>
 #include <rtinfo.h>
+#include "../rtinfo-common/socket.h"
 #include "socket.h"
 #include "rtinfo-network.h"
 #include "rtinfo-client.h"

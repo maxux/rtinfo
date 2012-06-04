@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <ncurses.h>
 #include <pthread.h>
-#include "socket.h"
+#include "../rtinfo-common/socket.h"
 #include "server.h"
 #include "display.h"
 
@@ -344,7 +344,7 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 			
 		else attrset(LEVEL_COLD);
 		
-		printw("% 3d°C", packed->temp_cpu.cpu_average);
+		printw("% 3d C", packed->temp_cpu.cpu_average);
 		
 	} else printw("     ");
 	
@@ -360,7 +360,7 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 			
 		else attrset(LEVEL_COLD);
 		
-		printw("% 2d°C ", packed->temp_hdd.hdd_average);
+		printw("% 2d C ", packed->temp_hdd.hdd_average);
 	}
 	
 	if(packed->temp_hdd.peak > 0) {
@@ -372,7 +372,7 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 			
 		else attrset(LEVEL_COLD);
 		
-		printw("(%d°C)", packed->temp_hdd.peak);
+		printw("(%d) C", packed->temp_hdd.peak);
 		
 	} else printw("      ");
 	

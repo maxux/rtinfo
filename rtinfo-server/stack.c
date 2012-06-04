@@ -7,7 +7,7 @@
 #include <pthread.h>
 #include "server.h"
 #include "stack.h"
-#include "socket.h"
+#include "../rtinfo-common/socket.h"
 #include "display.h"
 
 extern client_t *clients;

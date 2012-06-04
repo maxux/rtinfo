@@ -33,7 +33,7 @@
 #include <getopt.h>
 #include <time.h>
 #include <rtinfo.h>
-#include "socket.h"
+#include "../rtinfo-common/socket.h"
 #include "server.h"
 #include "display.h"
 #include "stack.h"
@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
 	void *buffer = malloc(sizeof(char) * BUFFER_SIZE);	/* Data read */
 	
 	client_t *client;
-	pthread_t thread_ping, thread_input;
+	pthread_t thread_ping; /*", thread_input; */
 	
 	/* ip allowed */
 	unsigned int *mask = NULL, *baseip = NULL;
