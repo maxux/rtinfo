@@ -21,9 +21,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <rtinfo.h>
-#include "rtinfo-client.h"
-#include "rtinfo-network.h"
-#include "rtinfo-local.h"
+#include "client.h"
+#include "client_network.h"
 
 void diep(char *str) {
 	perror(str);
@@ -38,11 +37,11 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 	
-	if(argc > 1) {
-		/* Network Side */
-		port = (argc > 2) ? atoi(argv[2]) : DEFAULT_PORT;
-		return networkside(argv[1], port);
+	if(argc < 2) {
+		fprintf(stderr, "Usage: ./%s server [port]\n", argv[0]);
+		exit(EXIT_FAILURE);
 		
-		/* Local Side */
-	} else return localside();
+	} else port = (argc > 2) ? atoi(argv[2]) : DEFAULT_PORT;
+	
+	return networkside(argv[1], port);
 }

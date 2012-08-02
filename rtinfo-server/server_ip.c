@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <ncurses.h>
 #include <math.h>
-#include "ip.h"
+#include "server_ip.h"
 
 int ip_mkmask(int imask) {
 	int i, mask = 0;	

@@ -6,26 +6,31 @@
 #include <netinet/in.h>
 #include <rtinfo.h>
 #include "../rtinfo-common/socket.h"
-#include "socket.h"
-#include "rtinfo-network.h"
-#include "rtinfo-client.h"
+#include "client_socket.h"
+#include "client_network.h"
+#include "client.h"
 
-/* void dump(char *s, int j) {
-	int i;
+void dump(unsigned char *data, unsigned int len) {
+	unsigned int i;
 	
-	for(i = 0; i < j; i++) {
-		printf("% 4d ", s[i]);
-		if(i % 32 == 0)
-			printf("\n");
+	printf("[+] DATA DUMP\n");
+	printf("[ ] 0x0000 == ");
+	
+	for(i = 0; i < len;) {
+		printf("0x%02x ", data[i++]);
+		
+		if(i % 16 == 0)
+			printf("\n[ ] 0x%04x == ", i);
 	}
 	
 	printf("\n");
-} */
+}
 
 int networkside(char *server, int port) {
 	netinfo_packed_t *packed_cast;
 	char *packedbuild;
 	short packedbuild_size;
+	rtinfo_loadagv_t legacy_loadavg;
 	
 	rtinfo_cpu_t *cpu;
 	int nbcpu;
@@ -42,8 +47,8 @@ int networkside(char *server, int port) {
 	struct sockaddr_in remote;
 	int sockfd, i;
 	
-	printf("[+] Starting rtinfo network client (version %.2f)\n", CLIENT_VERSION);
-	printf("[ ] Compiled with librtinfo version %.2f\n", rtinfo_version());
+	printf("[+] Starting rtinfo network client (version %u)\n", CLIENT_VERSION);
+	printf("[ ] Using librtinfo version %.2f\n", rtinfo_version());
 	
 	/*
 	 * Initializing Network
@@ -70,9 +75,9 @@ int networkside(char *server, int port) {
 	netbuild_cast = (netinfo_packed_net_t*) netbuild;
 	
 	/* Saving nbinterface to sending packet */
-	netbuild_cast->nbiface = nbiface;
+	netbuild_cast->nbiface = htobe32(nbiface);
 	
-	printf("[+] Network Interfaces  : %d\n", netbuild_cast->nbiface);
+	printf("[+] Network Interfaces  : %d\n", nbiface);
 	printf("[+] Netinfo summary size: %lu bytes\n", (unsigned long int) sizeof(netinfo_packed_t));
 	printf("[+] Netinfo network size: %d bytes\n", netbuild_size);
 	
@@ -104,7 +109,7 @@ int networkside(char *server, int port) {
 	packed_cast = (netinfo_packed_t*) packedbuild;
 	
 	/* Saving nbinterface to sending packet */
-	packed_cast->nbcpu = nbcpu;
+	packed_cast->nbcpu = htobe32(nbcpu);
 	
 	/* Writing hostname on netinfo_packed_t */
 	if(gethostname(packed_cast->hostname, sizeof(packed_cast->hostname)))
@@ -121,63 +126,71 @@ int networkside(char *server, int port) {
 	}
 	
 	/* Authentificating */
-	packed_cast->options		= QRY_SOCKET;
-	packed_cast->loadavg.load[0]	= CLIENT_VERSION; 
-	netinfo_send(sockfd, packed_cast, packedbuild_size, &remote);
+	packed_cast->options = htobe32(QRY_SOCKET);
+	packed_cast->version = htobe32(CLIENT_VERSION);
+	
+	netinfo_send_packed(sockfd, packed_cast, packedbuild_size, &remote);
 	
 	/* Waiting response from server */
 	if(recv(sockfd, packed_cast, packedbuild_size, 0) == -1)
 		diep("recvfrom");
 	
+	convert_header(packed_cast);
+	
+	/* Checking ACK answer */
 	if(!(packed_cast->options & ACK_SOCKET)) {
 		fprintf(stderr, "[-] Wrong response from server\n");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	
-	if((int) packed_cast->loadavg.load[0] != (int) CLIENT_VERSION) {
-		fprintf(stderr, "[-] Major version client/server (%.2f/%.2f) mismatch\n", CLIENT_VERSION, packed_cast->loadavg.load[0]);
-		exit(1);
+	/* Checking version */
+	if(packed_cast->version != CLIENT_VERSION) {
+		fprintf(stderr, "[-] Version client/server (%u/%u) mismatch\n", CLIENT_VERSION, packed_cast->version);
+		exit(EXIT_FAILURE);
 	}
 		
 	printf("[+] Client id: %d\n", packed_cast->clientid);
-	printf("[+] Server version: %.2f\n", packed_cast->loadavg.load[0]);
+	printf("[+] Server version: %u\n", packed_cast->version);
 	
 	
 	/*
 	 * Building options
 	 */
-	packed_cast->options   = USE_MEMORY | USE_LOADAVG | USE_TIME;	/* FIXME: Not used at this time */
-	netbuild_cast->options = USE_NETWORK;
+	packed_cast->options   = htobe32(0);	/* FIXME: Not used at this time */
+	netbuild_cast->options = htobe32(USE_NETWORK);
 	
-	packed_cast->version   = CLIENT_VERSION;
-	netbuild_cast->version = CLIENT_VERSION;
+	packed_cast->version   = htobe32(CLIENT_VERSION);
+	netbuild_cast->version = htobe32(CLIENT_VERSION);
 	
 	printf("[+] Sending data...\n");
 	
 	/* Working */
-	while(1) {	
+	while(1) {
 		/* Pre-reading data */
-		rtinfo_get_cpu(packed_cast->cpu, packed_cast->nbcpu);
-		rtinfo_get_network(truenet, netbuild_cast->nbiface);
+		rtinfo_get_cpu(packed_cast->cpu, nbcpu);
+		rtinfo_get_network(truenet, nbiface);
 
 		/* Sleeping */
 		usleep(UPDATE_INTERVAL);
-		
+
 		/* Reading CPU */
-		rtinfo_get_cpu(packed_cast->cpu, packed_cast->nbcpu);
-		rtinfo_mk_cpu_usage(packed_cast->cpu, packed_cast->nbcpu);
+		rtinfo_get_cpu(packed_cast->cpu, nbcpu);
+		rtinfo_mk_cpu_usage(packed_cast->cpu, nbcpu);
 		
 		/* Reading Network */
-		rtinfo_get_network(truenet, netbuild_cast->nbiface);
-		rtinfo_mk_network_usage(truenet, netbuild_cast->nbiface, UPDATE_INTERVAL / 1000);
+		rtinfo_get_network(truenet, nbiface);
+		rtinfo_mk_network_usage(truenet, nbiface, UPDATE_INTERVAL / 1000);
 		
 		/* Reading Memory */
 		if(!rtinfo_get_memory(&packed_cast->memory))
 			return 1;
 		
 		/* Reading Load Average */
-		if(!rtinfo_get_loadavg(&packed_cast->loadavg))
+		if(!rtinfo_get_loadavg(&legacy_loadavg))
 			return 1;
+		
+		for(i = 0; i < 3; i++)
+			packed_cast->loadavg[i] = (uint32_t)(legacy_loadavg.load[i] * 100);
 		
 		/* Reading uptime */
 		if(!rtinfo_get_uptime(&packed_cast->uptime))
@@ -197,17 +210,18 @@ int networkside(char *server, int port) {
 		time((time_t*) &packed_cast->timestamp);
 		
 		/* Sending info_t packed */
-		netinfo_send(sockfd, packed_cast, packedbuild_size, &remote);
-		
+		netinfo_send_packed(sockfd, packed_cast, packedbuild_size, &remote);
+
 		/*
-		 * Building Network packet from librtinfo reponse
+		 * Building Network packet from librtinfo response
 		 */
-		for(i = 0; i < netbuild_cast->nbiface; i++) {
+		for(i = 0; i < nbiface; i++) {
 			strcpy(netbuild_cast->net[i].name, truenet[i].name);
 			
-			netbuild_cast->net[i].current   = truenet[i].current;
-			netbuild_cast->net[i].up_rate   = truenet[i].up_rate;
-			netbuild_cast->net[i].down_rate = truenet[i].down_rate;
+			netbuild_cast->net[i].current.up   = htobe64(truenet[i].current.up);
+			netbuild_cast->net[i].current.down = htobe64(truenet[i].current.down);
+			netbuild_cast->net[i].up_rate      = htobe64(truenet[i].up_rate);
+			netbuild_cast->net[i].down_rate    = htobe64(truenet[i].down_rate);
 
 			strcpy(netbuild_cast->net[i].ip, truenet[i].ip);
 		}
@@ -215,7 +229,7 @@ int networkside(char *server, int port) {
 		/* dump(netbuild, netbuild_size); */
 		
 		/* Sending info_net_t Packet */
-		netinfo_send(sockfd, netbuild, netbuild_size, &remote);
+		netinfo_send_packed_net(sockfd, netbuild_cast, netbuild_size, &remote);
 	}
 	
 	return 0;

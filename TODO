@@ -1,0 +1,3 @@
+- hddtemp support disable on runtime
+- battery picto overflow occured one time
+- ncurses select remote for more informations

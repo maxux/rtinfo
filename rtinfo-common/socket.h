@@ -24,19 +24,19 @@
 		/* Common Packed/Net */
 		netinfo_options_t options;
 		char hostname[32];
-		int clientid;
-		float version;
+		uint32_t clientid;
+		uint32_t version;
 		
 		/* Specific */
-		int nbcpu;
+		uint32_t nbcpu;
 		rtinfo_memory_t memory;
-		rtinfo_loadagv_t loadavg;
+		uint32_t loadavg[3];           /* FIXME: use something else... */
 		rtinfo_battery_t battery;
 		rtinfo_temp_cpu_t temp_cpu;
 		rtinfo_temp_hdd_t temp_hdd;
 		rtinfo_uptime_t uptime;
-		uint64_t timestamp;
-		rtinfo_cpu_t cpu[];		/* Warning: limited to 15 cpu */
+		uint32_t timestamp;
+		rtinfo_cpu_t cpu[];            /* Warning: limited to 15 cpu */
 		
 	} __attribute__ ((packed)) netinfo_packed_t;
 	
@@ -44,8 +44,8 @@
 		/* Common Packed/Net */
 		netinfo_options_t options;
 		char hostname[32];
-		int nbiface;
-		float version;
+		uint32_t nbiface;
+		uint32_t version;
 		
 		/* Specific */
 		rtinfo_network_legacy_t net[];	/* Warning: limited to 16 interfaces */

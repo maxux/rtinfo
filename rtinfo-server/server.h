@@ -5,17 +5,35 @@
 	
 	#define BUFFER_SIZE		1024
 	#define REQUIRED_LIB_VERSION	3.40
+	
+	#define WINDOW_WIDTH		150
 
 	typedef struct client_t {
 		int id;
 		char name[32];
 		time_t last;
-		int nbiface;
-		int line;
+		
+		uint32_t nbiface;
+		
+		struct netinfo_packed_t *summary;
+		struct netinfo_packed_net_t *net;
+		
+		WINDOW *window;
+		WINDOW *netwindow;
+		int winx, winy;
+		int netx, nety;
 		
 		struct client_t *next;
 		
 	} client_t;
 	
 	void diep(char *str);
+	
+	extern WINDOW *wdebug;
+	extern int nbclients, newnety;
+	
+	#define debug(format, ...)	wmove(wdebug, 0, 0); \
+					wprintw(wdebug, format, __VA_ARGS__); \
+					wclrtoeol(wdebug); \
+					wrefresh(wdebug);
 #endif

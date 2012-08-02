@@ -33,16 +33,20 @@
 #include <getopt.h>
 #include <time.h>
 #include <rtinfo.h>
+#include <endian.h>
 #include "../rtinfo-common/socket.h"
 #include "server.h"
-#include "display.h"
-#include "stack.h"
-#include "ip.h"
+#include "server_display.h"
+#include "server_stack.h"
+#include "server_ip.h"
+#include "server_socket.h"
 
-client_t *clients = NULL;
-int nbclients = 0;
+client_t *clients = NULL, *lastclient = NULL;
+int nbclients = 0, newnety = 0;
 
 pthread_mutex_t mutex_clients;
+
+WINDOW *wdebug;
 
 static struct option long_options[] = {
 	{"allow",	required_argument, 0, 'a'},
@@ -58,25 +62,41 @@ void diep(char *str) {
 	exit(1);
 }
 
+void dump(unsigned char *data, unsigned int len) {
+	unsigned int i;
+	
+	printf("[+] DATA DUMP\n");
+	printf("[ ] 0x0000 == ");
+	
+	for(i = 0; i < len;) {
+		printf("0x%02x ", data[i++]);
+		
+		if(i % 16 == 0)
+			printf("\n[ ] 0x%04x == ", i);
+	}
+	
+	printf("\n");
+}
+
 void dummy(int signal) {
 	switch(signal) {
 		case SIGINT:
 			endwin();
-			exit(0);
+			exit(EXIT_SUCCESS);
 		break;
 		
 		case SIGWINCH:
-			endwin();
+			/* endwin();
 			clear();
 			refresh_whole();
 			refresh();
-			refresh_whole();	/* Second pass required */
+			refresh_whole(); */	/* Second pass required */
 		break;
 	}
 }
 
 void print_usage(char *app) {
-	printf("rtinfo Server (version %f)\n", SERVER_VERSION);
+	printf("rtinfo Server (version %u)\n", SERVER_VERSION);
 	printf("%s [-p|--port PORT] [-a|--allow IP/MASK] [-h|--help]\n\n", app);
 	
 	printf(" --port      specify listen port\n");
@@ -86,24 +106,22 @@ void print_usage(char *app) {
 	exit(1);
 }
 
-///
-/// SIG HANDLER
-///
-void * input_handler(void *dummy) {
+/* void * input_handler(void *dummy) {
 	int ch = 0;
 	int sub;
-	client_t *temp, *prev;
+	client_t *temp;
 	time_t t;
 	
+	usleep(2000000);
+	
 	while(1) {
-		ch = getch();
-		
+		ch = wgetch(clients->window);
+			
 		switch(ch) {
 			case 'd':
 				sub = 0;
 				
 				time(&t);
-				prev = NULL;
 				
 				pthread_mutex_lock(&mutex_clients);
 				
@@ -124,35 +142,70 @@ void * input_handler(void *dummy) {
 	}
 	
 	return dummy;
+} */
+
+client_t * build_headers() {
+	client_t *client;
+	
+	client = (client_t*) malloc(sizeof(client_t));
+	lastclient = client;
+	clients    = client;
+	
+	client->id      = 0;
+	client->nbiface = 1;
+	client->name[0] = '\0';
+	client->next    = NULL;
+	client->last    = time(NULL);
+	
+	client->winx      = 0;
+	client->winy      = 0;
+	client->window    = newwin(2, WINDOW_WIDTH, client->winy, 0);
+	
+	client->netx      = 0;
+	client->nety      = 3;
+	client->netwindow = newwin(2, WINDOW_WIDTH, client->nety, 0);
+	
+	build_header(client->window);
+	build_netheader(client->netwindow);
+	
+	return client;
 }
 
-void error_print(char *message) {
-	int x, y;
+int debug_mode(int sockfd) {
+	struct sockaddr_in remote;
+	int recvsize;
+	socklen_t slen = sizeof(remote);
+	void *buffer = malloc(sizeof(char) * BUFFER_SIZE);	/* Data read */
+	netinfo_packed_t *cast;
 	
-	pthread_mutex_lock(&mutex_clients);
+	printf("[+] Debug Mode: waiting...\n");
 	
-	getmaxyx(stdscr, y, x);			
-	move(y - 1, 0);
+	while(1) {
+		if((recvsize = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *) &remote, &slen)) == -1)
+			diep("recvfrom");
+		
+		dump(buffer, recvsize);
+		
+		cast = (netinfo_packed_t*) buffer;
+		printf("[+] Options  : %u\n", be32toh(cast->options));
+		printf("[+] Hostname : %s\n", cast->hostname);
+		printf("[+] ClientID : %u\n", be32toh(cast->clientid));
+		printf("[+] Version  : %u\n\n", be32toh(cast->version));
+	}
 	
-	attrset(A_BOLD | COLOR_PAIR(4));
-	printw(message);
-	attrset(A_BOLD | COLOR_PAIR(1));
-	
-	clrtoeol();
-	refresh();
-	
-	pthread_mutex_unlock(&mutex_clients);
+	return 0;
 }
 
 int main(int argc, char *argv[]) {
 	struct sockaddr_in si_me, remote;
 	int sockfd, cid = 0, recvsize;
 	socklen_t slen = sizeof(remote);
-	char temp[256];
 	void *buffer = malloc(sizeof(char) * BUFFER_SIZE);	/* Data read */
+	netinfo_packed_t *packed;
+	netinfo_packed_net_t *net;
 	
 	client_t *client;
-	pthread_t thread_ping; /*", thread_input; */
+	pthread_t thread_ping;//, thread_input;
 	
 	/* ip allowed */
 	unsigned int *mask = NULL, *baseip = NULL;
@@ -211,34 +264,7 @@ int main(int argc, char *argv[]) {
 	/* Reset client-id variable */
 	cid = 0;
 	
-	/* Init Console */
-	initscr();		/* Init ncurses */
-	cbreak();		/* No break line */
-	noecho();		/* No echo key */
-	start_color();		/* Enable color */
-	use_default_colors();
-	curs_set(0);		/* Disable cursor */
-	keypad(stdscr, TRUE);
-	scrollok(stdscr, 1);
-	
-	init_pair(1, COLOR_WHITE,   COLOR_BLACK);
-	init_pair(2, COLOR_BLUE,    COLOR_BLACK);
-	init_pair(3, COLOR_YELLOW,  COLOR_BLACK);
-	init_pair(4, COLOR_RED,     COLOR_BLACK);
-	init_pair(5, COLOR_BLACK,   COLOR_BLACK);
-	init_pair(6, COLOR_CYAN,    COLOR_BLACK);
-	init_pair(7, COLOR_GREEN,   COLOR_BLACK);
-	init_pair(8, COLOR_MAGENTA, COLOR_BLACK);
-	init_color(COLOR_BLACK, 0, 0, 0);
-	
-	attrset(COLOR_PAIR(1));
-	
-	/* Skipping Resize Signal */
-	signal(SIGINT, dummy);
-	signal(SIGWINCH, dummy);
-	
-	/* printw("%d %d %d %d %d = %d\n", sizeof(netinfo_options_t), sizeof(info_memory_t), sizeof(info_loadagv_t), sizeof(info_battery_t), sizeof(uint64_t), sizeof(netinfo_packed_t)); */
-
+	/* Creating socket */
 	if((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
 		diep("socket");
 
@@ -251,6 +277,38 @@ int main(int argc, char *argv[]) {
 	if(bind(sockfd, (struct sockaddr*) &si_me, sizeof(si_me)) == -1)
 		diep("bind");
 	
+	/* debug mode */
+	// return debug_mode(sockfd);
+	/* debug mode */
+	
+	/* Init Console */
+	initscr();		/* Init ncurses */
+	cbreak();		/* No break line */
+	noecho();		/* No echo key */
+	start_color();		/* Enable color */
+	use_default_colors();
+	curs_set(0);		/* Disable cursor */
+	keypad(stdscr, TRUE);
+	scrollok(stdscr, 1);
+	
+	/* Init Colors */
+	init_pair(1, COLOR_WHITE,   COLOR_BLACK);
+	init_pair(2, COLOR_BLUE,    COLOR_BLACK);
+	init_pair(3, COLOR_YELLOW,  COLOR_BLACK);
+	init_pair(4, COLOR_RED,     COLOR_BLACK);
+	init_pair(5, COLOR_BLACK,   COLOR_BLACK);
+	init_pair(6, COLOR_CYAN,    COLOR_BLACK);
+	init_pair(7, COLOR_GREEN,   COLOR_BLACK);
+	init_pair(8, COLOR_MAGENTA, COLOR_BLACK);
+	init_pair(9, COLOR_WHITE,   COLOR_RED);
+	init_color(COLOR_BLACK, 0, 0, 0);
+	
+	attrset(COLOR_PAIR(1));
+	
+	/* Handling Resize Signal */
+	signal(SIGINT, dummy);
+	signal(SIGWINCH, dummy);
+	
 	/* Starting Ping Thread */
 	if(pthread_create(&thread_ping, NULL, stack_ping, NULL))
 		diep("pthread_create");
@@ -259,12 +317,12 @@ int main(int argc, char *argv[]) {
 	/* if(pthread_create(&thread_input, NULL, input_handler, NULL))
 		diep("pthread_create"); */
 	
-	show_header();
-	show_net_header();
+	initdisplay();
+	build_headers();
 	
 	while(1) {
 		if((recvsize = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *) &remote, &slen)) == -1)
-			diep("recvfrom()");
+			perror("recvfrom");
 		
 		/* Checking ip --allowed */
 		if(nballow) {
@@ -277,69 +335,64 @@ int main(int argc, char *argv[]) {
 			
 			/* ip disallowed */
 			if(i != -1) {
-				sprintf(temp, "Warning: denied packed received from: %s", inet_ntoa(remote.sin_addr));
-				error_print(temp);
-				
+				debug("Warning: denied packed received from: %s", inet_ntoa(remote.sin_addr));				
 				continue;
 			}
 		}
 		
-		if(((netinfo_packed_t*) buffer)->options & QRY_SOCKET) {
-			/* printw("New client: %d | %s\n", cid, ((netinfo_packed_t*) buffer)->hostname); */
+		/* Converting endianess */
+		packed = (netinfo_packed_t*) buffer;
+		convert_header(packed);
+		
+		/* Reading header */
+		if(packed->options & QRY_SOCKET) {
+			/* printw("New client: %d | %s\n", cid, packed->hostname); */
 			
 			/* Authentification accepted */
-			((netinfo_packed_t*) buffer)->options  = ACK_SOCKET;
-			((netinfo_packed_t*) buffer)->clientid = cid;
+			packed->options  = htobe32(ACK_SOCKET);
+			packed->clientid = htobe32(cid);
 			
 			/* Sending Server Version */
-			((netinfo_packed_t*) buffer)->loadavg.load[0] = SERVER_VERSION;
+			packed->version  = htobe32((int)(SERVER_VERSION));
 			
 			if(sendto(sockfd, buffer, recvsize, 0, (const struct sockaddr *) &remote, sizeof(struct sockaddr_in)) == -1)
-				diep("sendto");
+				perror("sendto");
+			
+			/* Checking if the client is not already on stack */
+			if(!(client = stack_search(packed->hostname)))
+				client = stack_newclient(packed, cid++);
 				
 			continue;
 		}
 		
 		/* Version Check */
-		if((int) ((netinfo_packed_t*) buffer)->version != (int) SERVER_VERSION) {
-			sprintf(temp, "Warning: invalid version (%f) from %s", ((netinfo_packed_t*) buffer)->version, inet_ntoa(remote.sin_addr));
-			error_print(temp);
+		if(packed->version != (unsigned int) (SERVER_VERSION)) {
+			debug("Warning: invalid version (%u) from %s (%s)", packed->version, inet_ntoa(remote.sin_addr), packed->hostname);
 			continue;
 		}
 		
 		/* Small Overflow Check */
-		if(((netinfo_packed_t*) buffer)->options != USE_NETWORK && ((netinfo_packed_t*) buffer)->nbcpu > 24) {
-			sprintf(temp, "Warning: wrong cpu count (%d) from %s, rejected.", ((netinfo_packed_t*) buffer)->nbcpu, inet_ntoa(remote.sin_addr));
-			error_print(temp);
+		if(packed->options != USE_NETWORK && be32toh(packed->nbcpu) > 24) {
+			debug("Warning: wrong cpu count (%d) from %s, rejected.", be32toh(packed->nbcpu), inet_ntoa(remote.sin_addr));
 			continue;
 		}
 		
-		if(!(client = stack_search(((netinfo_packed_t*) buffer)->hostname))) {
-			client = (client_t*) malloc(sizeof(client_t));
-			
-			client->id      = cid++;
-			client->nbiface = 1;
-			
-			strncpy(client->name, ((netinfo_packed_t*) buffer)->hostname, sizeof(client->name));
-			client->name[sizeof(client->name) - 1] = '\0';
-			
-			if(!stack_client(client)) {
-				fprintf(stderr, "[-] stacking client failed\n");
-				return 1;
-			}
-			
-			nbclients++;
-			
-			show_net_header();
-		}
+		/* Searching client on stack */
+		if(!(client = stack_search(packed->hostname)))
+			client = stack_newclient(packed, cid++);
 		
+		/* Saving last update time (timeout) */
 		time(&client->last);
 		
-		if(((netinfo_packed_t*) buffer)->options == USE_NETWORK) {
-			client->nbiface = ((netinfo_packed_net_t*) buffer)->nbiface + 1;
-			show_packet_network((netinfo_packed_net_t*) buffer, &remote, client);
+		if(packed->options == USE_NETWORK) {
+			net = (netinfo_packed_net_t *) buffer;
+			convert_packed_net(net);
+			show_packet_network(net, client);
 
-		} else show_packet((netinfo_packed_t*) buffer, &remote, client);
+		} else {
+			convert_packed(packed);
+			show_packet(packed, &remote, client);
+		}
 	}
 
 	close(sockfd);

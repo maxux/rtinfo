@@ -1,3 +1,23 @@
+/*
+ * rtinfo is a small local/client "realtime" system health monitor
+ * Copyright (C) 2012  DANIEL Maxime <root@maxux.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301, USA.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -6,46 +26,21 @@
 #include <ncurses.h>
 #include <rtinfo.h>
 #include <inttypes.h>
-#include "rtinfo-client.h"
 #include "rtinfo-local.h"
 
-#define RATE_COLD	(A_BOLD | COLOR_PAIR(5))
-#define RATE_ACTIVE	(A_BOLD | COLOR_PAIR(8))
-#define RATE_LOW	(A_BOLD | COLOR_PAIR(6))
-#define RATE_MIDDLE	(A_BOLD | COLOR_PAIR(3))
-#define RATE_HIGH	(A_BOLD | COLOR_PAIR(4))
+void diep(char *str) {
+	perror(str);
+	exit(EXIT_FAILURE);
+}
 
-#define LEVEL_COLD	(A_BOLD | COLOR_PAIR(5))
-#define LEVEL_ACTIVE	(COLOR_PAIR(1))
-#define LEVEL_WARN	(A_BOLD | COLOR_PAIR(3))
-#define LEVEL_HIGH	(A_BOLD | COLOR_PAIR(4))
-
-#define TITLE_STYLE	(A_BOLD | COLOR_PAIR(6))
-
-int x, y;
-char *units[] = {"Ko", "Mo", "Go", "To"};
-char *uptime_units[] = {"min", "hrs", "days"};
-
-/* Network rate colors */
-int rate_limit[] = {
-		2   * 1024,		/* 2   Ko/s | Magenta	*/
-		100 * 1024,		/* 100 Ko/s | Cyan	*/
-		1.5 * 1024 * 1024,	/* 1.5 Mo/s | Yellow	*/
-		20  * 1024 * 1024,	/* 20  Mo/s | Red	*/
-};
-
-/* Memory (RAM/SWAP) level colors */
-int memory_limit[] = {
-		30,	/* 30% | White  */
-		50,	/* 50% | Yellow */
-		85,	/* 85% | Red    */
-};
-
-int cpu_limit[] = {
-		30,	/* 30% | White  */
-		50,	/* 50% | Yellow */
-		85,	/* 85% | Red	*/
-};
+int main(void) {
+	if((int) rtinfo_version() != 3 || rtinfo_version() < 3.40) {
+		fprintf(stderr, "[-] Require librtinfo 3 (>= 3.40)\n");
+		return 1;
+	}
+	
+	return localside();
+}
 
 void dummy(int signal) {
 	switch(signal) {

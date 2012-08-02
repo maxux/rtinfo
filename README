@@ -1,47 +1,60 @@
-   rtinfo-client / rtinfo-server
-===================================
+   rtinfo-client / rtinfo-server / rtinfo-local
+==================================================
 
-	rtinfo-client is able to monitor locally or remotely via udp using librtinfo
-	rtinfo-server is an ncurses-based ui displaying rtinfo-client remote information
+        rtinfo-client: is the remote udp client (using librtinfo)
+
+        rtinfo-server is an ncurses-based ui displaying rtinfo-client remote
+        information
+
+        rtinfo-client is a local monitor with librtinfo
 
 Dependencies
-===========
+============
 
-	rtinfo-client depends on librtinfo
-	rtinfo-server depends on libncurses
-	both of them depends on librtinfo (http://git.maxux.net/librtinfo)
+        rtinfo-client depends on librtinfo
+        rtinfo-server depends on librtinfo and libncurses
+        librtinfo can be found here: https://git.maxux.net/librtinfo
 
 How to use it
 =============
 
-	The easy way is to type `make` inside rtinfo's root directory.
-	If you want to compile only a specific part of the project, you can run `make` inside each corresponding folder (or make client / make server).
+        The easy way is to type `make` inside rtinfo's root directory.
+        If you want to compile only a specific part of the project, you can run
+        `make` inside each corresponding folder
+        (or make client / make server / make local).
+
+        There is no `make install` function at this time.
+
+        To use rtinfo, just run ./rtinfo-local/rtinfo-local, without arguments.
+        This will display your local system information.
+
+        If you want to use the client (what you want to do in the most case) to
+        a server, just pass the server ip as the first argument of the
+        rtinfo-client:
+                $ ./rtinfo-client/rtinfo-client 127.0.0.1 [port]
+
+        To start the server: 
+                $ ./rtinfo-server/rtinfo-server [--port] [--allow]
+
+        Port and allow arguments are optional.
+
+        Note: if you haven't installed the librtinfo, you should set the
+        LD_LIBRARY_PATH to the correct lib path.
 	
-	There is no `make install` function at this time.
-	
-	
-	To use rtinfo, just launch ./rtinfo-client/rtinfo-client, without any arguments. This will display your local system information.
-	If you want to connect rtinfo-client to a server, just pass the server ip as the first argument:
-		$ ./rtinfo-client/rtinfo-client 127.0.0.1 [port]
-	
-	To start the server: 
-		$ ./rtinfo-server/rtinfo-server [--port] [--allow]
-	
-	Port and allow arguments are optional.
-	
-	Note: if you haven't installed the librtinfo, you should set the LD_LIBRARY_PATH to the correct lib path
-	
-	Warning: there is no encryption for the udp packets. If you are on a dangerous network, please consider 
-	         using rtinfo over an ssh tunnel or an encrypted vpn.
-		 Server may now restrict connection based on a list of allowed clients.
+        Warning: there is no encryption for the udp packets. If you are on a
+                 dangerous/untrusted network, please consider  using rtinfo
+                 over an ssh tunnel or an encrypted vpn.
+
+                 Server may now restrict connection based on a list of
+                 allowed clients.
 
 Bug ?
 =====
 
-	If you find a bug or have any suggestion, please send me a patch/message/anything else to
-		root@maxux.net
+        If you find a bug or have any suggestion, please send me a
+        patch/message/anything else to: root@maxux.net
 
 Contributors
 ============
 
-	mortecouille, willubuntu, Zaibon
+       mortecouille, willubuntu, Zaibon
