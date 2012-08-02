@@ -131,7 +131,7 @@ void build_header(WINDOW *win) {
 	title(win, "Time", 8, 0);
 	title(win, "Uptime", 6, 0);
 	title(win, "Bat.", 5, 0);
-	title(win, "CPU   / HDD Temp", 10, 1);
+	title(win, "CPU / HDD °C", 10, 1);
 	wprintw(win, "\n");
 	split(win);
 	
@@ -145,7 +145,8 @@ void build_netheader(WINDOW *win) {
 	title(win, "Download Size", 13, 0);
 	title(win, "Upload Rate", 20, 0);
 	title(win, "Upload Size", 11, 0);
-	title(win, "Interface Address", 17, 1);
+	title(win, "Interface Address", 17, 0);
+	title(win, "Link Speed", 10, 1);
 	wprintw(win, "\n");
 	
 	split(win);
@@ -364,7 +365,6 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 	/* Print remote coretemp value */
 	separe(client->window, 1);
 	
-	// FIXME: Use remote critical
 	if(!packed->temp_cpu.critical)
 		packed->temp_cpu.critical = 100;
 		
@@ -377,9 +377,9 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 			
 		else wattrset(client->window, LEVEL_COLD);
 		
-		wprintw(client->window, "% 3d C", packed->temp_cpu.cpu_average);
+		wprintw(client->window, "% 3d", packed->temp_cpu.cpu_average);
 		
-	} else wprintw(client->window, "     ");
+	} else wprintw(client->window, "   ");
 	
 	wattrset(client->window, LEVEL_COLD);
 	wprintw(client->window, " / ");
@@ -393,7 +393,7 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 			
 		else wattrset(client->window, LEVEL_COLD);
 		
-		wprintw(client->window, "% 2d C ", packed->temp_hdd.hdd_average);
+		wprintw(client->window, "% 2d ", packed->temp_hdd.hdd_average);
 	}
 	
 	if(packed->temp_hdd.peak > 0) {
@@ -405,9 +405,9 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 			
 		else wattrset(client->window, LEVEL_COLD);
 		
-		wprintw(client->window, "(%d) C", packed->temp_hdd.peak);
+		wprintw(client->window, "(%d)", packed->temp_hdd.peak);
 		
-	} else wprintw(client->window, "      ");
+	} else wprintw(client->window, "    ");
 	
 	/* End of line */
 	wclrtoeol(client->window);
@@ -499,8 +499,13 @@ void show_packet_network(netinfo_packed_net_t *net, client_t *client) {
 		if(strncmp(net->net[i].ip, "10.", 3) && strncmp(net->net[i].ip, "172.16.", 7) && strncmp(net->net[i].ip, "192.168.", 7))
 			wattrset(client->netwindow, A_BOLD | COLOR_PAIR(7));
 			
-		wprintw(client->netwindow, "%s\n", net->net[i].ip);
+		wprintw(client->netwindow, "%-16s ", net->net[i].ip);
 		wattrset(client->netwindow, COLOR_PAIR(1));
+		
+		separe(client->netwindow, 1);
+		
+		/* Print Speed */
+		wprintw(client->netwindow, "%d Mbps\n", net->net[i].speed);
 	}
 	
 	split(client->netwindow);

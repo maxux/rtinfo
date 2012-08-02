@@ -177,6 +177,8 @@ int debug_mode(int sockfd) {
 	socklen_t slen = sizeof(remote);
 	void *buffer = malloc(sizeof(char) * BUFFER_SIZE);	/* Data read */
 	netinfo_packed_t *cast;
+	netinfo_packed_net_t *net;
+	uint32_t i;
 	
 	printf("[+] Debug Mode: waiting...\n");
 	
@@ -191,6 +193,25 @@ int debug_mode(int sockfd) {
 		printf("[+] Hostname : %s\n", cast->hostname);
 		printf("[+] ClientID : %u\n", be32toh(cast->clientid));
 		printf("[+] Version  : %u\n\n", be32toh(cast->version));
+		
+		if(be32toh(cast->options) & QRY_SOCKET) {
+			cast->options = htobe32(ACK_SOCKET);
+			
+			if(sendto(sockfd, buffer, recvsize, 0, (const struct sockaddr *) &remote, sizeof(struct sockaddr_in)) == -1)
+				perror("sendto");
+		}
+		
+		if(be32toh(cast->options) & USE_NETWORK) {
+			net = (netinfo_packed_net_t *) cast;
+			net->nbiface = be32toh(net->nbiface);
+			
+			printf("Interfaces: %d\n", net->nbiface);
+			for(i = 0; i < net->nbiface; i++) {
+				printf("%u\n", sizeof(rtinfo_network_legacy_t));
+				printf("Name: %s\n", net->net[i].name);
+				printf("IPv4: %s\n", net->net[i].ip);
+			}
+		}
 	}
 	
 	return 0;

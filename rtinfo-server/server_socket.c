@@ -50,6 +50,7 @@ void convert_packed_net(netinfo_packed_net_t *net) {
 		net->net[i].current.down = htobe64(net->net[i].current.down);
 		net->net[i].up_rate      = htobe64(net->net[i].up_rate);
 		net->net[i].down_rate    = htobe64(net->net[i].down_rate);
+		net->net[i].speed        = htobe16(net->net[i].speed);
 	}
 }
 

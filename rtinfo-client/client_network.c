@@ -222,6 +222,7 @@ int networkside(char *server, int port) {
 			netbuild_cast->net[i].current.down = htobe64(truenet[i].current.down);
 			netbuild_cast->net[i].up_rate      = htobe64(truenet[i].up_rate);
 			netbuild_cast->net[i].down_rate    = htobe64(truenet[i].down_rate);
+			netbuild_cast->net[i].speed        = htobe16(truenet[i].speed);
 
 			strcpy(netbuild_cast->net[i].ip, truenet[i].ip);
 		}
