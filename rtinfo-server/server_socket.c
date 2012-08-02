@@ -11,6 +11,9 @@
 #include "../rtinfo-common/socket.h"
 #include "server_socket.h"
 
+#include <ncurses.h>
+#include "server.h"
+
 void convert_packed(netinfo_packed_t *packed) {
 	int i;
 	
@@ -30,11 +33,11 @@ void convert_packed(netinfo_packed_t *packed) {
 	
 	packed->uptime.uptime       = be32toh(packed->uptime.uptime);
 	
-	packed->temp_cpu.critical    = be64toh(packed->temp_cpu.critical);
-	packed->temp_cpu.cpu_average = be64toh(packed->temp_cpu.cpu_average);
+	packed->temp_cpu.critical    = be16toh(packed->temp_cpu.critical);
+	packed->temp_cpu.cpu_average = be16toh(packed->temp_cpu.cpu_average);
 	
-	packed->temp_hdd.peak        = be64toh(packed->temp_hdd.peak);
-	packed->temp_hdd.hdd_average = be64toh(packed->temp_hdd.hdd_average);
+	packed->temp_hdd.peak        = be16toh(packed->temp_hdd.peak);
+	packed->temp_hdd.hdd_average = be16toh(packed->temp_hdd.hdd_average);
 	
 	packed->timestamp = be32toh(packed->timestamp);
 }

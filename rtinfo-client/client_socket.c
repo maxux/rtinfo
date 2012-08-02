@@ -50,11 +50,11 @@ int netinfo_send_packed(int sockfd, netinfo_packed_t *packed, size_t size, const
 	
 	packed->uptime.uptime       = htobe32(packed->uptime.uptime);
 	
-	packed->temp_cpu.critical    = htobe64(packed->temp_cpu.critical);
-	packed->temp_cpu.cpu_average = htobe64(packed->temp_cpu.cpu_average);
+	packed->temp_cpu.critical    = htobe16(packed->temp_cpu.critical);
+	packed->temp_cpu.cpu_average = htobe16(packed->temp_cpu.cpu_average);
 	
-	packed->temp_hdd.peak        = htobe64(packed->temp_hdd.peak);
-	packed->temp_hdd.hdd_average = htobe64(packed->temp_hdd.hdd_average);	
+	packed->temp_hdd.peak        = htobe16(packed->temp_hdd.peak);
+	packed->temp_hdd.hdd_average = htobe16(packed->temp_hdd.hdd_average);	
 	
 	packed->timestamp = htobe32(packed->timestamp);
 	

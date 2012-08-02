@@ -131,7 +131,7 @@ void build_header(WINDOW *win) {
 	title(win, "Time", 8, 0);
 	title(win, "Uptime", 6, 0);
 	title(win, "Bat.", 5, 0);
-	title(win, "CPU / HDD Temp", 10, 1);
+	title(win, "CPU   / HDD Temp", 10, 1);
 	wprintw(win, "\n");
 	split(win);
 	
