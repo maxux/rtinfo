@@ -49,9 +49,10 @@ pthread_mutex_t mutex_clients;
 WINDOW *wdebug;
 
 static struct option long_options[] = {
-	{"allow",	required_argument, 0, 'a'},
-	{"port",	required_argument, 0, 'p'},
-	{"help",	no_argument, 0, 'h'},
+	{"allow",       required_argument, 0, 'a'},
+	{"port",        required_argument, 0, 'p'},
+	{"help",        no_argument,       0, 'h'},
+	{"debug",       no_argument,       0, 'd'},
 	{0, 0, 0, 0}
 };
 
@@ -199,18 +200,37 @@ int debug_mode(int sockfd) {
 			
 			if(sendto(sockfd, buffer, recvsize, 0, (const struct sockaddr *) &remote, sizeof(struct sockaddr_in)) == -1)
 				perror("sendto");
+			
+			continue;
 		}
 		
 		if(be32toh(cast->options) & USE_NETWORK) {
 			net = (netinfo_packed_net_t *) cast;
 			net->nbiface = be32toh(net->nbiface);
 			
-			printf("Interfaces: %d\n", net->nbiface);
+			printf("[+] Network packet data:\n");
+			printf("[ ] Interfaces: %d\n", net->nbiface);
+			
 			for(i = 0; i < net->nbiface; i++) {
-				printf("%u\n", sizeof(rtinfo_network_legacy_t));
-				printf("Name: %s\n", net->net[i].name);
-				printf("IPv4: %s\n", net->net[i].ip);
+				printf("[ ] Name: %s [%s]\n", net->net[i].name, net->net[i].ip);
+				printf("[ ] Rate: %llu / %llu\n", be64toh(net->net[i].up_rate), be64toh(net->net[i].down_rate));
+				printf("[ ] Data: %llu / %llu\n\n", be64toh(net->net[i].current.up), be64toh(net->net[i].current.down));
 			}
+			
+		} else {
+			printf("[+] Summary packet data:\n");
+			
+			printf("[ ] CPU Count  : %u\n", be32toh(cast->nbcpu));
+			printf("[ ] Memory RAM : %llu / %llu\n", be64toh(cast->memory.ram_used), be64toh(cast->memory.ram_total));
+			printf("[ ] Memory SWAP: %llu / %llu\n", be64toh(cast->memory.swap_free), be64toh(cast->memory.swap_total));
+			printf("[ ] Load Avg.  : %.2f / %.2f / %.2f\n", ((float) be32toh(cast->loadavg[0]) / 100), ((float) be32toh(cast->loadavg[1]) / 100), ((float) be32toh(cast->loadavg[2]) / 100));
+			printf("[ ] Battery    : %u / %u / %u / %llu\n", be32toh(cast->battery.charge_full), be32toh(cast->battery.charge_now), cast->battery.load, be64toh(cast->battery.status));
+			
+			printf("[ ] CPU Temp   : %hu / %hu\n", be16toh(cast->temp_cpu.cpu_average), be16toh(cast->temp_cpu.critical));
+			printf("[ ] HDD Temp   : %hu / %hu\n", be16toh(cast->temp_hdd.hdd_average), be16toh(cast->temp_hdd.peak));
+			
+			printf("[ ] Uptime     : %u\n", be32toh(cast->uptime.uptime));
+			printf("[ ] Timestamp  : %u\n\n", be32toh(cast->timestamp));
 		}
 	}
 	
@@ -224,6 +244,7 @@ int main(int argc, char *argv[]) {
 	void *buffer = malloc(sizeof(char) * BUFFER_SIZE);	/* Data read */
 	netinfo_packed_t *packed;
 	netinfo_packed_net_t *net;
+	char debug = 0;
 	
 	client_t *client;
 	pthread_t thread_ping;//, thread_input;
@@ -276,6 +297,10 @@ int main(int argc, char *argv[]) {
 				print_usage(argv[0]);
 				return 1;
 			break;
+			
+			case 'd':
+				debug = 1;
+			break;
 
 			default:
 				abort();
@@ -298,9 +323,9 @@ int main(int argc, char *argv[]) {
 	if(bind(sockfd, (struct sockaddr*) &si_me, sizeof(si_me)) == -1)
 		diep("bind");
 	
-	/* debug mode */
-	// return debug_mode(sockfd);
-	/* debug mode */
+	/* Debug Mode */
+	if(debug)
+		return debug_mode(sockfd);
 	
 	/* Init Console */
 	initscr();		/* Init ncurses */

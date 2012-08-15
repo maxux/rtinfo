@@ -436,7 +436,7 @@ void show_packet_network(netinfo_packed_net_t *net, client_t *client) {
 	
 	for(i = 0; i < net->nbiface; i++) {
 		/* Hide Interfaces without ip and hide loopback interface */
-		if(!*(net->net[i].ip) || !strncmp(net->net[i].ip, "127.0.0.1", 9)) {
+		if((!*(net->net[i].ip) && !net->net[i].speed) || !strncmp(net->net[i].ip, "127.0.0.1", 9)) {
 			reduce++;
 			continue;
 		}
@@ -505,7 +505,11 @@ void show_packet_network(netinfo_packed_net_t *net, client_t *client) {
 		separe(client->netwindow, 1);
 		
 		/* Print Speed */
-		wprintw(client->netwindow, "%d Mbps\n", net->net[i].speed);
+		if(!net->net[i].speed) {
+			wattrset(client->netwindow, RATE_COLD);
+			wprintw(client->netwindow, "Unknown\n");
+			
+		} else wprintw(client->netwindow, "%d Mbps\n", net->net[i].speed);
 	}
 	
 	split(client->netwindow);
