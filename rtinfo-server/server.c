@@ -221,6 +221,11 @@ int debug_mode(int sockfd) {
 			printf("[+] Summary packet data:\n");
 			
 			printf("[ ] CPU Count  : %u\n", be32toh(cast->nbcpu));
+			
+			for(i = 0; i < be32toh(cast->nbcpu); i++)
+				printf("[ ] CPU % 7d : %d\n", i, cast->cpu[i].usage);
+			
+			
 			printf("[ ] Memory RAM : %llu / %llu\n", be64toh(cast->memory.ram_used), be64toh(cast->memory.ram_total));
 			printf("[ ] Memory SWAP: %llu / %llu\n", be64toh(cast->memory.swap_free), be64toh(cast->memory.swap_total));
 			printf("[ ] Load Avg.  : %.2f / %.2f / %.2f\n", ((float) be32toh(cast->loadavg[0]) / 100), ((float) be32toh(cast->loadavg[1]) / 100), ((float) be32toh(cast->loadavg[2]) / 100));

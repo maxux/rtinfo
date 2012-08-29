@@ -36,6 +36,12 @@ int netinfo_send_packed(int sockfd, netinfo_packed_t *packed, size_t size, const
 	int i;
 	
 	/* Converting packet for network endian */
+	// packed->nbcpu = htobe32(packed->nbcpu);
+	// Note: nbcpu is converted once, on the header built
+	
+	// FIXME
+	// for(i = 0; i < packed->nbcpu; i++) 
+	
 	packed->memory.ram_total  = htobe64(packed->memory.ram_total);
 	packed->memory.ram_used   = htobe64(packed->memory.ram_used);
 	packed->memory.swap_total = htobe64(packed->memory.swap_total);
@@ -57,10 +63,6 @@ int netinfo_send_packed(int sockfd, netinfo_packed_t *packed, size_t size, const
 	packed->temp_hdd.hdd_average = htobe16(packed->temp_hdd.hdd_average);	
 	
 	packed->timestamp = htobe32(packed->timestamp);
-	
-	/* for(i = 0; i < be32toh(packed->nbcpu); i++) {
-		
-	} */
 	
 	/* printf("[+] Sending packed (size: %u)\n", size); */
 	if(sendto(sockfd, packed, size, 0, (const struct sockaddr *) remote, sizeof(struct sockaddr_in)) == -1)

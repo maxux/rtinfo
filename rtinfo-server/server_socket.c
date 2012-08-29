@@ -19,6 +19,10 @@ void convert_packed(netinfo_packed_t *packed) {
 	
 	packed->nbcpu = be32toh(packed->nbcpu);
 	
+	// FIXME
+	// for(i = 0; i < packed->nbcpu; i++)
+		
+	
 	packed->memory.ram_total  = be64toh(packed->memory.ram_total);
 	packed->memory.ram_used   = be64toh(packed->memory.ram_used);
 	packed->memory.swap_total = be64toh(packed->memory.swap_total);
@@ -39,7 +43,7 @@ void convert_packed(netinfo_packed_t *packed) {
 	packed->temp_hdd.peak        = be16toh(packed->temp_hdd.peak);
 	packed->temp_hdd.hdd_average = be16toh(packed->temp_hdd.hdd_average);
 	
-	packed->timestamp = be32toh(packed->timestamp);
+	packed->timestamp = be32toh(packed->timestamp);	
 }
 
 void convert_packed_net(netinfo_packed_net_t *net) {

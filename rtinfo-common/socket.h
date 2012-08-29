@@ -35,7 +35,7 @@
 		rtinfo_temp_cpu_t temp_cpu;
 		rtinfo_temp_hdd_t temp_hdd;
 		rtinfo_uptime_t uptime;
-		uint32_t timestamp;
+		uint64_t timestamp;
 		rtinfo_cpu_t cpu[];            /* Warning: limited to 15 cpu */
 		
 	} __attribute__ ((packed)) netinfo_packed_t;
