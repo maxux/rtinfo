@@ -1,18 +1,19 @@
    rtinfo-client / rtinfo-server / rtinfo-local
 ==================================================
 
-        rtinfo-client: is the remote udp client (using librtinfo)
+        rtinfo-client is the remote udp client (using librtinfo)
 
         rtinfo-server is an ncurses-based ui displaying rtinfo-client remote
         information
 
-        rtinfo-client is a local monitor with librtinfo
+        rtinfo-local is a local monitor (using librtinfo)
 
 Dependencies
 ============
 
         rtinfo-client depends on librtinfo
         rtinfo-server depends on librtinfo and libncurses
+	rtinfo-local  depends on librtinfo and libncurses
         librtinfo can be found here: https://git.maxux.net/librtinfo
 
 How to use it
