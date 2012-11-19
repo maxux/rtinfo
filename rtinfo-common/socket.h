@@ -20,6 +20,11 @@
 		
 	} netinfo_options_t;
 	
+	typedef struct rtinfo_cpu_legacy_t {
+		unsigned char usage;                  /* CPU usage (in percent) */
+		
+	} __attribute__ ((packed)) rtinfo_cpu_legacy_t;
+	
 	typedef struct netinfo_packed_t {
 		/* Common Packed/Net */
 		netinfo_options_t options;
@@ -36,9 +41,19 @@
 		rtinfo_temp_hdd_t temp_hdd;
 		rtinfo_uptime_t uptime;
 		uint64_t timestamp;
-		rtinfo_cpu_t cpu[];            /* Warning: limited to 15 cpu */
+		rtinfo_cpu_legacy_t cpu[];     /* Note: limited to 256 cpu */
 		
 	} __attribute__ ((packed)) netinfo_packed_t;
+	
+	typedef struct rtinfo_network_legacy_t {
+		char name[32];		/* Interface name */
+		struct rtinfo_network_byte_t current;	/* Number of bytes transfered over the interface */
+		int64_t up_rate;		/* Upload rate (in b/s) */
+		int64_t down_rate;		/* Download rate (in b/s) */
+		char ip[16];			/* IP Address in char */
+		uint16_t speed;                 /* Link speed in (in Mbps) */
+		
+	} __attribute__ ((packed)) rtinfo_network_legacy_t;
 	
 	typedef struct netinfo_packed_net_t {
 		/* Common Packed/Net */

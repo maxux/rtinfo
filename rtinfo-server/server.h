@@ -4,7 +4,7 @@
 	#include <time.h>
 	
 	#define BUFFER_SIZE		1024
-	#define REQUIRED_LIB_VERSION	3.40
+	#define REQUIRED_LIB_VERSION	4.00
 	
 	#define WINDOW_WIDTH		145
 

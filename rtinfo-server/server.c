@@ -262,13 +262,13 @@ int main(int argc, char *argv[]) {
 	int option_index = 0;
 	
 	if((int) rtinfo_version() != (int) REQUIRED_LIB_VERSION || rtinfo_version() < REQUIRED_LIB_VERSION) {
-		fprintf(stderr, "[-] Require librtinfo 3 (>= %.2f)\n", REQUIRED_LIB_VERSION);
+		fprintf(stderr, "[-] Require librtinfo %d (>= %.2f)\n", (int) REQUIRED_LIB_VERSION, REQUIRED_LIB_VERSION);
 		return 1;
 	}
 	
 	/* Parsing options */
 	while(1) {
-		cid = getopt_long (argc, argv, "a:p:h", long_options, &option_index);
+		cid = getopt_long(argc, argv, "a:p:h", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if(cid == -1)

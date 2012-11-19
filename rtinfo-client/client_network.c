@@ -33,19 +33,18 @@ int networkside(char *server, int port) {
 	rtinfo_loadagv_t legacy_loadavg;
 	
 	rtinfo_cpu_t *cpu;
-	int nbcpu;
 	short cpu_size;
 	
 	rtinfo_network_t *truenet;
-	int nbiface;
 	short legacy_size;
 	
-	char *netbuild;
-	short netbuild_size;
-	netinfo_packed_net_t *netbuild_cast;
+	char *netbuild = NULL;
+	short netbuild_size = 0;
+	netinfo_packed_net_t *netbuild_cast = NULL;
 	
 	struct sockaddr_in remote;
-	int sockfd, i;
+	int sockfd;
+	unsigned int i, oldnbiface;
 	
 	printf("[+] Starting rtinfo network client (version %u)\n", CLIENT_VERSION);
 	printf("[ ] Using librtinfo version %.2f\n", rtinfo_version());
@@ -53,53 +52,28 @@ int networkside(char *server, int port) {
 	/*
 	 * Initializing Network
 	 */
-	truenet = rtinfo_init_network(&nbiface);
+	truenet = rtinfo_init_network();
+	oldnbiface = 0;
 	
-	if(nbiface > 16) {
-		nbiface = 16;
+	if(truenet->nbiface > 16) {
+		truenet->nbiface = 16;
 		fprintf(stderr, "[-] Warning: At this time, only 16 network interfaces can handled over the network\n");
 	}
-	
-	/* Calculate size of legacy_t required */
-	legacy_size = sizeof(rtinfo_network_legacy_t) * nbiface;
-	
-	/* Building 'netbuild' memory area with dynamic extra content
-	
-		<---    netinfo_packed_net_t      ---> <--- [info_network_legacy_t 1][info_network_legacy_t 2][...] --->
-		<--- sizeof(netinfo_packed_net_t) ---> <---         sizeof(info_network_legacy_t) * nbifaces        --->
-	*/
-	netbuild_size = sizeof(netinfo_packed_net_t) + legacy_size;
-	netbuild = (char*) malloc(netbuild_size);
-	
-	/* Casting to avoid shit code */
-	netbuild_cast = (netinfo_packed_net_t*) netbuild;
-	
-	/* Saving nbinterface to sending packet */
-	netbuild_cast->nbiface = htobe32(nbiface);
-	
-	printf("[+] Network Interfaces  : %d\n", nbiface);
-	printf("[+] Netinfo summary size: %lu bytes\n", (unsigned long int) sizeof(netinfo_packed_t));
-	printf("[+] Netinfo network size: %d bytes\n", netbuild_size);
-	
-	/* Writing hostname to sending packed */
-	if(gethostname(netbuild_cast->hostname, sizeof(netbuild_cast->hostname)))
-		diep("gethostname");
 	
 	
 	
 	/*
 	 * Initializing CPU
 	 */
-	cpu = rtinfo_init_cpu(&nbcpu);
-	free(cpu);
+	cpu = rtinfo_init_cpu();
 	
-	if(nbcpu > 16) {
-		nbcpu = 16;
+	if(cpu->nbcpu > 256) {
+		cpu->nbcpu = 256;
 		fprintf(stderr, "[-] Warning: At this time, only 15 cpu can handled over the network\n");
 	}
 	
 	/* Calculate size of packed_t required */
-	cpu_size = sizeof(rtinfo_cpu_t) * nbcpu;
+	cpu_size = sizeof(rtinfo_cpu_t) * cpu->nbcpu;
 	
 	/* Building 'netbuild' memory area with dynamic extra content (like interfaces) */
 	packedbuild_size = sizeof(netinfo_packed_t) + cpu_size;
@@ -109,7 +83,7 @@ int networkside(char *server, int port) {
 	packed_cast = (netinfo_packed_t*) packedbuild;
 	
 	/* Saving nbinterface to sending packet */
-	packed_cast->nbcpu = htobe32(nbcpu);
+	packed_cast->nbcpu = htobe32(cpu->nbcpu);
 	
 	/* Writing hostname on netinfo_packed_t */
 	if(gethostname(packed_cast->hostname, sizeof(packed_cast->hostname)))
@@ -157,46 +131,42 @@ int networkside(char *server, int port) {
 	 * Building options
 	 */
 	packed_cast->options   = htobe32(0);	/* FIXME: Not used at this time */
-	netbuild_cast->options = htobe32(USE_NETWORK);
-	
 	packed_cast->version   = htobe32(CLIENT_VERSION);
-	netbuild_cast->version = htobe32(CLIENT_VERSION);
 	
 	printf("[+] Sending data...\n");
 	
+	/* Pre-reading data */
+	rtinfo_get_cpu(cpu);
+	rtinfo_get_network(truenet);
+	
 	/* Working */
 	while(1) {
-		/* Pre-reading data */
-		rtinfo_get_cpu(packed_cast->cpu, nbcpu);
-		rtinfo_get_network(truenet, nbiface);
-
 		/* Sleeping */
 		usleep(UPDATE_INTERVAL);
 
 		/* Reading CPU */
-		rtinfo_get_cpu(packed_cast->cpu, nbcpu);
-		rtinfo_mk_cpu_usage(packed_cast->cpu, nbcpu);
+		rtinfo_get_cpu(cpu);
+		rtinfo_mk_cpu_usage(cpu);
+		
+		for(i = 0; i < cpu->nbcpu; i++)
+			packed_cast->cpu[i].usage = cpu->dev[i].usage;
 		
 		/* Reading Network */
-		rtinfo_get_network(truenet, nbiface);
-		rtinfo_mk_network_usage(truenet, nbiface, UPDATE_INTERVAL / 1000);
+		rtinfo_get_network(truenet);
+		rtinfo_mk_network_usage(truenet, UPDATE_INTERVAL / 1000);
 		
-		/* Reading Memory */
 		if(!rtinfo_get_memory(&packed_cast->memory))
 			return 1;
 		
-		/* Reading Load Average */
 		if(!rtinfo_get_loadavg(&legacy_loadavg))
 			return 1;
 		
 		for(i = 0; i < 3; i++)
 			packed_cast->loadavg[i] = (uint32_t)(legacy_loadavg.load[i] * 100);
 		
-		/* Reading uptime */
 		if(!rtinfo_get_uptime(&packed_cast->uptime))
 			return 1;
 		
-		/* Reading Battery State */
 		if(!rtinfo_get_battery(&packed_cast->battery, NULL))
 			return 1;
 		
@@ -215,16 +185,43 @@ int networkside(char *server, int port) {
 		/*
 		 * Building Network packet from librtinfo response
 		 */
-		for(i = 0; i < nbiface; i++) {
-			strcpy(netbuild_cast->net[i].name, truenet[i].name);
+		
+		/* Calculate size of legacy_t required */
+		if(oldnbiface != truenet->nbiface) {
+			free(netbuild);
 			
-			netbuild_cast->net[i].current.up   = htobe64(truenet[i].current.up);
-			netbuild_cast->net[i].current.down = htobe64(truenet[i].current.down);
-			netbuild_cast->net[i].up_rate      = htobe64(truenet[i].up_rate);
-			netbuild_cast->net[i].down_rate    = htobe64(truenet[i].down_rate);
-			netbuild_cast->net[i].speed        = htobe16(truenet[i].speed);
+			legacy_size = sizeof(rtinfo_network_legacy_t) * truenet->nbiface;
+			
+			/* Building 'netbuild' memory area with dynamic extra content
+			
+				<---    netinfo_packed_net_t      ---> <--- [info_network_legacy_t 1][info_network_legacy_t 2][...] --->
+				<--- sizeof(netinfo_packed_net_t) ---> <---         sizeof(info_network_legacy_t) * nbifaces        --->
+			*/
+			netbuild_size = sizeof(netinfo_packed_net_t) + legacy_size;
+			netbuild = (char*) malloc(netbuild_size);
+			
+			/* Casting for clean code */
+			netbuild_cast = (netinfo_packed_net_t*) netbuild;
+			
+			/* Writing hostname to sending packed */
+			if(gethostname(netbuild_cast->hostname, sizeof(netbuild_cast->hostname)))
+				diep("gethostname");
+			
+			netbuild_cast->options = htobe32(USE_NETWORK);
+			netbuild_cast->version = htobe32(CLIENT_VERSION);
+			netbuild_cast->nbiface = htobe32(truenet->nbiface);
+		}
+			
+		for(i = 0; i < truenet->nbiface; i++) {
+			strcpy(netbuild_cast->net[i].name, truenet->net[i].name);
+			
+			netbuild_cast->net[i].current.up   = htobe64(truenet->net[i].current.up);
+			netbuild_cast->net[i].current.down = htobe64(truenet->net[i].current.down);
+			netbuild_cast->net[i].up_rate      = htobe64(truenet->net[i].up_rate);
+			netbuild_cast->net[i].down_rate    = htobe64(truenet->net[i].down_rate);
+			netbuild_cast->net[i].speed        = htobe16(truenet->net[i].speed);
 
-			strcpy(netbuild_cast->net[i].ip, truenet[i].ip);
+			strcpy(netbuild_cast->net[i].ip, truenet->net[i].ip);
 		}
 		
 		/* dump(netbuild, netbuild_size); */

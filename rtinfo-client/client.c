@@ -32,8 +32,8 @@ void diep(char *str) {
 int main(int argc, char *argv[]) {
 	int port;
 	
-	if((int) rtinfo_version() != 3 || rtinfo_version() < 3.44) {
-		fprintf(stderr, "[-] Require librtinfo 3 (>= 3.44)\n");
+	if((int) rtinfo_version() != 4 || rtinfo_version() < 4.00) {
+		fprintf(stderr, "[-] Require librtinfo 4 (>= 4.00)\n");
 		return 1;
 	}
 	
