@@ -34,8 +34,8 @@ void diep(char *str) {
 }
 
 int main(void) {
-	if((int) rtinfo_version() != 3 || rtinfo_version() < 3.40) {
-		fprintf(stderr, "[-] Require librtinfo 3 (>= 3.40)\n");
+	if((int) rtinfo_version() != 4 || rtinfo_version() < 4.00) {
+		fprintf(stderr, "[-] Require librtinfo 4 (>= 4.00)\n");
 		return 1;
 	}
 	
@@ -150,7 +150,7 @@ int localside() {
 	rtinfo_network_t *net;
 	float memory_percent, swap_percent;
 	
-	int nbcpu, nbiface, i;
+	unsigned int i;
 	struct tm * timeinfo;
 	char hostname[32];
 	
@@ -186,31 +186,31 @@ int localside() {
 	signal(SIGWINCH, dummy);
 	
 	/* Initializing variables */
-	net = rtinfo_init_network(&nbiface);
-	cpu = rtinfo_init_cpu(&nbcpu);
+	net = rtinfo_init_network();
+	cpu = rtinfo_init_cpu();
 	
 	/* Loading curses */
 	getmaxyx(stdscr, y, x);
 	
 	printw("Loading...");
 	refresh();
+	
+	/* Pre-reading data */
+	rtinfo_get_cpu(cpu);
+	rtinfo_get_network(net);
 		
 	/* Working */	
 	while(1) {	
-		/* Pre-reading data */
-		rtinfo_get_cpu(cpu, nbcpu);
-		rtinfo_get_network(net, nbiface);
-
 		/* Sleeping */
 		usleep(UPDATE_INTERVAL);
 		
 		/* Reading CPU */
-		rtinfo_get_cpu(cpu, nbcpu);
-		rtinfo_mk_cpu_usage(cpu, nbcpu);
+		rtinfo_get_cpu(cpu);
+		rtinfo_mk_cpu_usage(cpu);
 		
 		/* Reading Network */
-		rtinfo_get_network(net, nbiface);
-		rtinfo_mk_network_usage(net, nbiface, UPDATE_INTERVAL / 1000);
+		rtinfo_get_network(net);
+		rtinfo_mk_network_usage(net, UPDATE_INTERVAL / 1000);
 		
 		/* Reading Memory */
 		if(!rtinfo_get_memory(&memory))
@@ -260,19 +260,19 @@ int localside() {
 		attrset(TITLE_STYLE);
 		printw("\n CPU  : ");
 		
-		for(i = 0; i < nbcpu; i++) {
-			if(cpu[i].usage > 85)
+		for(i = 0; i < cpu->nbcpu; i++) {
+			if(cpu->dev[i].usage > 85)
 				attrset(LEVEL_HIGH);
 				
-			else if(cpu[i].usage > 50)
+			else if(cpu->dev[i].usage > 50)
 				attrset(LEVEL_WARN);
 			
-			else if(cpu[i].usage > 30)
+			else if(cpu->dev[i].usage > 30)
 				attrset(LEVEL_ACTIVE);
 				
 			else attrset(LEVEL_COLD);
 			
-			printw("%3d%% ", cpu[i].usage);
+			printw("%3d%% ", cpu->dev[i].usage);
 			attrset(COLOR_PAIR(1));
 			
 			if(i == 0)
@@ -341,10 +341,10 @@ int localside() {
 		printw("\n\n Load : ");
 		
 		for(i = 0; i < 3; i++) {
-			if(loadavg.load[i] >= nbcpu - 1)
+			if(loadavg.load[i] >= cpu->nbcpu - 1)
 				attrset(LEVEL_HIGH);
 				
-			else if(loadavg.load[i] > (nbcpu / 2))
+			else if(loadavg.load[i] > (cpu->nbcpu / 2))
 				attrset(LEVEL_WARN);
 			
 			else if(loadavg.load[i] > 0.4)
@@ -417,67 +417,67 @@ int localside() {
 		printw("Net Inter. : ");
 		
 		attrset(LEVEL_COLD);
-		printw("%d", nbiface);
+		printw("%d", net->nbiface);
 		
 		/*
 		 * Network part
 		 */
 		move(10, 0);
 		
-		for(i = 0; i < nbiface; i++) {
+		for(i = 0; i < net->nbiface; i++) {
 			/* Interface */
 			attrset(COLOR_PAIR(1));
-			printw(" %-12s", net[i].name);
+			printw(" %-12s", net->net[i].name);
 			separe(0);
 			
-			if(net[i].down_rate > rate_limit[3])
+			if(net->net[i].down_rate > rate_limit[3])
 				attrset(RATE_HIGH);
 				
-			else if(net[i].down_rate > rate_limit[2])
+			else if(net->net[i].down_rate > rate_limit[2])
 				attrset(RATE_MIDDLE);
 			
-			else if(net[i].down_rate > rate_limit[1])
+			else if(net->net[i].down_rate > rate_limit[1])
 				attrset(RATE_LOW);
 			
-			else if(net[i].down_rate > rate_limit[0])
+			else if(net->net[i].down_rate > rate_limit[0])
 				attrset(RATE_ACTIVE);
 			
 			else attrset(RATE_COLD);
 			
-			printw(" % *.2f %s/s", (x / 2) - 38, sizeroundd(net[i].down_rate), unitround(net[i].down_rate));
+			printw(" % *.2f %s/s", (x / 2) - 38, sizeroundd(net->net[i].down_rate), unitround(net->net[i].down_rate));
 			separe(1);
 			
 			attrset(COLOR_PAIR(1));
-			printw("% 8.2f %s\n", sizeroundd(net[i].current.down), unitround(net[i].current.down));
+			printw("% 8.2f %s\n", sizeroundd(net->net[i].current.down), unitround(net->net[i].current.down));
 		}
 		
-		for(i = 0; i < nbiface; i++) {
+		for(i = 0; i < net->nbiface; i++) {
 			move(10 + i, (x / 2) - 4);
 			separe(1);
 			
-			if(net[i].up_rate > rate_limit[3])
+			if(net->net[i].up_rate > rate_limit[3])
 				attrset(RATE_HIGH);
 				
-			else if(net[i].up_rate > rate_limit[2])
+			else if(net->net[i].up_rate > rate_limit[2])
 				attrset(RATE_MIDDLE);
 			
-			else if(net[i].up_rate > rate_limit[1])
+			else if(net->net[i].up_rate > rate_limit[1])
 				attrset(RATE_LOW);
 			
-			else if(net[i].up_rate > rate_limit[0])
+			else if(net->net[i].up_rate > rate_limit[0])
 				attrset(RATE_ACTIVE);
 			
 			else attrset(RATE_COLD);
 			
-			printw("% *.2f %s/s", (x / 2) - 38, sizeroundd(net[i].up_rate), unitround(net[i].up_rate));
+			printw("% *.2f %s/s", (x / 2) - 38, sizeroundd(net->net[i].up_rate), unitround(net->net[i].up_rate));
 			separe(1);
 			
 			attrset(COLOR_PAIR(1));
-			printw("% 8.2f %s", sizeroundd(net[i].current.up), unitround(net[i].current.up));
+			printw("% 8.2f %s", sizeroundd(net->net[i].current.up), unitround(net->net[i].current.up));
 			
 			/* Print IP */
 			separe(1);
-			printw("%s\n", net[i].ip);
+			printw("%s\n", net->net[i].ip);
 			attrset(COLOR_PAIR(1));
 		}
 		
