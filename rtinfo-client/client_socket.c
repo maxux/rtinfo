@@ -7,8 +7,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <endian.h>
 #include "../rtinfo-common/socket.h"
+#include "byte_conversions.h"
 #include "client_socket.h"
 #include "client.h"
 

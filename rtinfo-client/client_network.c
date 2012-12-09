@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 #include <rtinfo.h>
 #include "../rtinfo-common/socket.h"
+#include "byte_conversions.h"
 #include "client_socket.h"
 #include "client_network.h"
 #include "client.h"
