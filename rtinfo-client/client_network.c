@@ -54,7 +54,7 @@ int networkside(char *server, int port) {
 	 * Initializing Network
 	 */
 	truenet = rtinfo_init_network();
-	oldnbiface = 0;
+	oldnbiface = -1;
 	
 	if(truenet->nbiface > 16) {
 		truenet->nbiface = 16;
