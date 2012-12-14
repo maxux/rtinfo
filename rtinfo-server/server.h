@@ -6,7 +6,7 @@
 	#define BUFFER_SIZE		1024
 	#define REQUIRED_LIB_VERSION	4.00
 	
-	#define WINDOW_WIDTH		145
+	#define WINDOW_WIDTH		148
 
 	typedef struct client_t {
 		int id;

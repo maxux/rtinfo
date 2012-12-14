@@ -113,7 +113,7 @@ void title(WINDOW *win, char *title, int length, char eol) {
 
 void split(WINDOW *win) {
 	wattrset(win, COLOR_PAIR(2));
-	whline(win, ACS_HLINE, 150);
+	whline(win, ACS_HLINE, WINDOW_WIDTH - 1);
 }
 
 void refresh_whole() {
@@ -125,7 +125,7 @@ void build_header(WINDOW *win) {
 	title(win, "Hostname", 14, 0);
 	title(win, "CPU / Nb", 8, 0);
 	title(win, "RAM", 14, 0);
-	title(win, "SWAP", 12, 0);
+	title(win, "SWAP", 14, 0);
 	title(win, "Load Avg.", 20, 0);
 	title(win, "Remote IP", 15, 0);
 	title(win, "Time", 8, 0);
@@ -290,12 +290,16 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 			wattrset(client->window, LEVEL_ACTIVE);
 		
 		else wattrset(client->window, LEVEL_COLD);
+		
+		/* FIXME: width fail on %2.0f when full */
+		if(swap_percent == 100)
+			swap_percent = 99;
 			
-		wprintw(client->window, "%3lld Mo (%2.0f%%)", (packed->memory.swap_total - packed->memory.swap_free) / 1024, swap_percent);
+		wprintw(client->window, "%5lld Mo (%2.0f%%)", (packed->memory.swap_total - packed->memory.swap_free) / 1024, swap_percent);
 		
 	} else {
 		wattrset(client->window, A_BOLD | COLOR_PAIR(8));	/* Magenta */
-		wprintw(client->window, "   No swap  ");
+		wprintw(client->window, "    No swap   ");
 	}
 	wattrset(client->window, COLOR_PAIR(1));
 	

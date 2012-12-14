@@ -47,7 +47,7 @@ client_t * stack_search(char *name) {
 	return temp;
 }
 
-void stack_timeout(client_t *root, time_t timeout) {
+void stack_timeout(client_t *root, time_t timeout, int colorpair) {
 	uint32_t i;
 	
 	while(root) {
@@ -57,7 +57,7 @@ void stack_timeout(client_t *root, time_t timeout) {
 			
 			/* Summary */
 			wmove(root->window, 0, 0);
-			wattrset(root->window, A_BOLD | COLOR_PAIR(9));
+			wattrset(root->window, A_BOLD | COLOR_PAIR(colorpair));
 			
 			wprintw(root->window, " %-14s ", root->name);
 			wrefresh(root->window);
@@ -65,7 +65,7 @@ void stack_timeout(client_t *root, time_t timeout) {
 			wattrset(root->window, COLOR_PAIR(1));
 			
 			/* Network */
-			wattrset(root->netwindow, A_BOLD | COLOR_PAIR(9));
+			wattrset(root->netwindow, A_BOLD | COLOR_PAIR(colorpair));
 
 			for(i = 0; i < root->nbiface; i++) {
 				wmove(root->netwindow, i, 0);
@@ -93,8 +93,12 @@ void * stack_ping(void *dummy) {
 	nanosleep(&tv, &tv);
 	
 	while(1) {
+		timeout = time(NULL) - 5;
+		stack_timeout(clients->next, timeout, 3); /* yellow */
+		
 		timeout = time(NULL) - 30;
-		stack_timeout(clients->next, timeout);		
+		stack_timeout(clients->next, timeout, 9); /* red */	
+		
 		nanosleep(&tv, &tv);
 	}
 	
