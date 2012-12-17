@@ -20,77 +20,77 @@
 	#else
 		#if BYTE_ORDER == LITTLE_ENDIAN
 			#ifndef be16toh
-			#define be16toh(x) bswap_16 (x)
+				#define be16toh(x) bswap_16 (x)
 			#endif
 			#ifndef htobe16
-			#define htobe16(x) bswap_16 (x)
+				#define htobe16(x) bswap_16 (x)
 			#endif
 			#ifndef be32toh
-			#define be32toh(x) bswap_32 (x)
+				#define be32toh(x) bswap_32 (x)
 			#endif
 			#ifndef htobe32
-			#define htobe32(x) bswap_32 (x)
+				#define htobe32(x) bswap_32 (x)
 			#endif
 			#ifndef be64toh
-			#define be64toh(x) bswap_64 (x)
+				#define be64toh(x) bswap_64 (x)
 			#endif
 			#ifndef htobe64
-			#define htobe64(x) bswap_64 (x)
+				#define htobe64(x) bswap_64 (x)
 			#endif
 			#ifndef le16toh
-			#define le16toh(x) (x)
+				#define le16toh(x) (x)
 			#endif
 			#ifndef htole16
-			#define htole16(x) (x)
+				#define htole16(x) (x)
 			#endif
 			#ifndef le32toh
-			#define le32toh(x) (x)
+				#define le32toh(x) (x)
 			#endif
 			#ifndef htole32
-			#define htole32(x) (x)
+				#define htole32(x) (x)
 			#endif
 			#ifndef le64toh
-			#define le64toh(x) (x)
+				#define le64toh(x) (x)
 			#endif
 			#ifndef htole64
-			#define htole64(x) (x)
+				#define htole64(x) (x)
 			#endif
 		#else /* BYTE_ORDER == BIG_ENDIAN */
 			#ifndef be16toh
-			#define be16toh(x) (x)
+				#define be16toh(x) (x)
 			#endif
 			#ifndef htobe16
-			#define htobe16(x) (x)
+				#define htobe16(x) (x)
 			#endif
 			#ifndef be32toh
-			#define be32toh(x) (x)
+				#define be32toh(x) (x)
 			#endif
 			#ifndef htobe32
-			#define htobe32(x) (x)
+				#define htobe32(x) (x)
 			#endif
 			#ifndef be64toh
-			#define be64toh(x) (x)
+				#define be64toh(x) (x)
 			#endif
 			#ifndef htobe64
-			#define htobe64(x) (x)
+				#define htobe64(x) (x)
 			#endif
 			#ifndef le16toh
-			#define le16toh(x) bswap_16 (x)
+				#define le16toh(x) bswap_16 (x)
 			#endif
 			#ifndef htole16
-			#define htole16(x) bswap_16 (x)
+				#define htole16(x) bswap_16 (x)
 			#endif
 			#ifndef le32toh
-			#define le32toh(x) bswap_32 (x)
+				#define le32toh(x) bswap_32 (x)
 			#endif
 			#ifndef htole32
-			#define htole32(x) bswap_32 (x)
+				#define htole32(x) bswap_32 (x)
 			#endif
 			#ifndef le64toh
-			#define le64toh(x) bswap_64 (x)
+				#define le64toh(x) bswap_64 (x)
 			#endif
 			#ifndef htole64
-			#define htole64(x) bswap_64 (x)
+				#define htole64(x) bswap_64 (x)
 			#endif
 		#endif
 
