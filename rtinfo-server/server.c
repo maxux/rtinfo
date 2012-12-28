@@ -149,14 +149,15 @@ client_t * build_headers() {
 	client_t *client;
 	
 	client = (client_t*) malloc(sizeof(client_t));
+
 	lastclient = client;
 	clients    = client;
 	
-	client->id      = 0;
-	client->nbiface = 1;
-	client->name[0] = '\0';
-	client->next    = NULL;
-	client->last    = time(NULL);
+	client->id        = nbclients++;
+	client->dspiface  = 1;
+	client->name[0]   = '\0';
+	client->next      = NULL;
+	client->last      = time(NULL);
 	
 	client->winx      = 0;
 	client->winy      = 0;
@@ -179,8 +180,11 @@ int debug_mode(int sockfd) {
 	void *buffer = malloc(sizeof(char) * BUFFER_SIZE);	/* Data read */
 	netinfo_packed_t *cast;
 	netinfo_packed_net_t *net;
+	rtinfo_network_legacy_t *read;
 	uint32_t i;
+	char strip[16], ifname[64];
 	
+	/* This mode works like the real version, but dump data without format it */
 	printf("[+] Debug Mode: waiting...\n");
 	
 	while(1) {
@@ -188,6 +192,7 @@ int debug_mode(int sockfd) {
 			diep("recvfrom");
 		
 		dump(buffer, recvsize);
+		printf("[+] Size     : %u bytes\n", recvsize);
 		
 		cast = (netinfo_packed_t*) buffer;
 		printf("[+] Options  : %u\n", be32toh(cast->options));
@@ -206,15 +211,32 @@ int debug_mode(int sockfd) {
 		
 		if(be32toh(cast->options) & USE_NETWORK) {
 			net = (netinfo_packed_net_t *) cast;
-			net->nbiface = be32toh(net->nbiface);
+			net->nbiface = (net->nbiface);
 			
 			printf("[+] Network packet data:\n");
 			printf("[ ] Interfaces: %d\n", net->nbiface);
 			
+			read = net->net;
+
 			for(i = 0; i < net->nbiface; i++) {
-				printf("[ ] Name: %s [%s]\n", net->net[i].name, net->net[i].ip);
-				printf("[ ] Rate: %llu / %llu\n", be64toh(net->net[i].up_rate), be64toh(net->net[i].down_rate));
-				printf("[ ] Data: %llu / %llu\n\n", be64toh(net->net[i].current.up), be64toh(net->net[i].current.down));
+				if(!inet_ntop(AF_INET, &read->ip, strip, sizeof(strip)))
+					fprintf(stderr, "[-] Cannot extract ip !\n");
+
+				if(read->name_length > sizeof(ifname)) {
+					fprintf(stderr, "[-] Interface name too long\n");
+					goto next_read;
+				}
+
+				strncpy(ifname, read->name, read->name_length);
+				ifname[read->name_length] = '\0';
+
+				printf("[ ] Name : %s [%s]\n", read->name, strip);
+				printf("[ ] Rate : %llu / %llu\n", be64toh(read->up_rate), be64toh(read->down_rate));
+				printf("[ ] Data : %llu / %llu\n", be64toh(read->current.up), be64toh(read->current.down));
+				printf("[ ] Speed: %u\n\n", packed_speed_rtinfo(read->speed));
+
+				next_read:
+				read = (rtinfo_network_legacy_t*) ((char*) read + sizeof(rtinfo_network_legacy_t) + read->name_length);
 			}
 			
 		} else {
@@ -244,13 +266,13 @@ int debug_mode(int sockfd) {
 
 int main(int argc, char *argv[]) {
 	struct sockaddr_in si_me, remote;
-	int sockfd, cid = 0, recvsize;
+	int sockfd, recvsize;
 	socklen_t slen = sizeof(remote);
 	void *buffer = malloc(sizeof(char) * BUFFER_SIZE);	/* Data read */
 	netinfo_packed_t *packed;
 	netinfo_packed_net_t *net;
 	char debug = 0;
-	
+	size_t checklength;
 	client_t *client;
 	pthread_t thread_ping;//, thread_input;
 	
@@ -268,13 +290,13 @@ int main(int argc, char *argv[]) {
 	
 	/* Parsing options */
 	while(1) {
-		cid = getopt_long(argc, argv, "a:p:h", long_options, &option_index);
+		i = getopt_long(argc, argv, "a:p:h", long_options, &option_index);
 
 		/* Detect the end of the options. */
-		if(cid == -1)
+		if(i == -1)
 			break;
 
-		switch(cid) {
+		switch(i) {
 			/* New allowed client */
 			case 'a':
 				nballow++;
@@ -311,9 +333,6 @@ int main(int argc, char *argv[]) {
 				abort();
 		}
 	}
-	
-	/* Reset client-id variable */
-	cid = 0;
 	
 	/* Creating socket */
 	if((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
@@ -378,10 +397,8 @@ int main(int argc, char *argv[]) {
 		/* Checking ip --allowed */
 		if(nballow) {
 			for(i = 0; i < nballow; i++) {
-				if((remote.sin_addr.s_addr & mask[i]) == baseip[i]) {
+				if((remote.sin_addr.s_addr & mask[i]) == baseip[i])
 					i = -1;
-					break;
-				}
 			}
 			
 			/* ip disallowed */
@@ -391,7 +408,7 @@ int main(int argc, char *argv[]) {
 			}
 		}
 		
-		/* Converting endianess */
+		/* Converting header endianess */
 		packed = (netinfo_packed_t*) buffer;
 		convert_header(packed);
 		
@@ -401,7 +418,7 @@ int main(int argc, char *argv[]) {
 			
 			/* Authentification accepted */
 			packed->options  = htobe32(ACK_SOCKET);
-			packed->clientid = htobe32(cid);
+			packed->clientid = 0; /* FIXME: Not used anymore, remove it on next version */
 			
 			/* Sending Server Version */
 			packed->version  = htobe32((int)(SERVER_VERSION));
@@ -411,7 +428,7 @@ int main(int argc, char *argv[]) {
 			
 			/* Checking if the client is not already on stack */
 			if(!(client = stack_search(packed->hostname)))
-				client = stack_newclient(packed, cid++);
+				client = stack_newclient(packed);
 				
 			continue;
 		}
@@ -422,27 +439,59 @@ int main(int argc, char *argv[]) {
 			continue;
 		}
 		
-		/* Small Overflow Check */
-		if(packed->options != USE_NETWORK && be32toh(packed->nbcpu) > 24) {
-			debug("Warning: wrong cpu count (%d) from %s, rejected.", be32toh(packed->nbcpu), inet_ntoa(remote.sin_addr));
-			continue;
+		/* Checking size consistency */
+		if(packed->options == USE_NETWORK) {
+			/* Network size, should not exceed 32 bytes per interface name */
+			net = (netinfo_packed_net_t*) packed;
+			checklength = sizeof(netinfo_packed_net_t) + (sizeof(rtinfo_network_legacy_t) * net->nbiface) + (net->nbiface * 32);
+
+			if((size_t) recvsize > checklength) {
+				debug("Warning: wrong network summary datasize (%d bytes) from %s, should be <= %u bytes.",  recvsize, inet_ntoa(remote.sin_addr), checklength);
+				continue;
+			}
+
+		} else {
+			/* Summary size */
+			checklength = sizeof(netinfo_packed_t) + (sizeof(rtinfo_cpu_legacy_t) * be32toh(packed->nbcpu));
+
+			if((size_t) recvsize != checklength) {
+				debug("Warning: wrong summary datasize (%d bytes) from %s, should be %u bytes.",  recvsize, inet_ntoa(remote.sin_addr), checklength);
+				continue;
+			}
 		}
 		
 		/* Searching client on stack */
 		if(!(client = stack_search(packed->hostname)))
-			client = stack_newclient(packed, cid++);
+			client = stack_newclient(packed);
 		
 		/* Saving last update time (timeout) */
 		time(&client->last);
 		
 		if(packed->options == USE_NETWORK) {
-			net = (netinfo_packed_net_t *) buffer;
-			convert_packed_net(net);
-			show_packet_network(net, client);
+			/* Updating allocation */
+			if(client->net_length != (size_t) recvsize) {
+				client->net = (netinfo_packed_net_t *) realloc(client->net, recvsize);
+				client->net_length = (size_t) recvsize;
+			}
+
+			memcpy(client->net, buffer, recvsize);
+			show_packet_network(client, 1);
 
 		} else {
+			/* Convert data */
 			convert_packed(packed);
-			show_packet(packed, &remote, client);
+
+			/* Updating allocation */
+			if(client->summary_length != (size_t) recvsize) {
+				client->summary = (netinfo_packed_t *) realloc(client->summary, recvsize);
+				client->summary_length = recvsize;
+			}
+
+			/* Copy current data */
+			client->summary = (netinfo_packed_t *) malloc(recvsize);
+			memcpy(client->summary, buffer, recvsize);
+
+			show_packet(&remote, client);
 		}
 	}
 

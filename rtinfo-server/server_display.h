@@ -3,14 +3,14 @@
 	
 	extern pthread_mutex_t mutex_screen;
 	
-	void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t *client);
-	void show_packet_network(netinfo_packed_net_t *net, client_t *client);
+	void show_packet(struct sockaddr_in *remote, client_t *client);
+	void show_packet_network(client_t *client, char redraw);
 	
-	void refresh_whole();
+	void redraw_network(client_t *root);
 	
 	void initdisplay();
-	void netmoveunder(client_t *root, int offset);
-	void joining(client_t *client);
+	// void netmoveunder(client_t *root, int offset);
+	void preparing_client(client_t *client);
 	
 	void build_header(WINDOW *win);
 	void build_netheader(WINDOW *win);

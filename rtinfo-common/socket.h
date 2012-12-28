@@ -20,8 +20,18 @@
 		
 	} netinfo_options_t;
 	
+	typedef enum netinfo_speed_t {
+		NETINFO_NET_SPEED_UNK   = 0,
+		NETINFO_NET_SPEED_10    = 1,
+		NETINFO_NET_SPEED_100   = 2,
+		NETINFO_NET_SPEED_1000  = 3,
+		NETINFO_NET_SPEED_2500  = 4,
+		NETINFO_NET_SPEED_10000 = 5,
+
+	} netinfo_speed_t;
+
 	typedef struct rtinfo_cpu_legacy_t {
-		unsigned char usage;                  /* CPU usage (in percent) */
+		uint8_t usage;            /* CPU usage (in percent) */
 		
 	} __attribute__ ((packed)) rtinfo_cpu_legacy_t;
 	
@@ -41,17 +51,18 @@
 		rtinfo_temp_hdd_t temp_hdd;
 		rtinfo_uptime_t uptime;
 		uint64_t timestamp;
-		rtinfo_cpu_legacy_t cpu[];     /* Note: limited to 256 cpu */
+		rtinfo_cpu_legacy_t cpu[];     /* Note: limited for udp */
 		
 	} __attribute__ ((packed)) netinfo_packed_t;
 	
 	typedef struct rtinfo_network_legacy_t {
-		char name[32];		/* Interface name */
-		struct rtinfo_network_byte_t current;	/* Number of bytes transfered over the interface */
-		int64_t up_rate;		/* Upload rate (in b/s) */
-		int64_t down_rate;		/* Download rate (in b/s) */
-		char ip[16];			/* IP Address in char */
-		uint16_t speed;                 /* Link speed in (in Mbps) */
+		struct rtinfo_network_byte_t current;   /* Bytes transfered */
+		int64_t up_rate;          /* Upload rate (in b/s) */
+		int64_t down_rate;        /* Download rate (in b/s) */
+		uint32_t ip;              /* IP Address in char */
+		uint8_t speed;            /* Link speed in (in Mbps) */
+		uint8_t name_length;      /* Interface name length */
+		char name[];              /* Interface name */
 		
 	} __attribute__ ((packed)) rtinfo_network_legacy_t;
 	
@@ -63,7 +74,7 @@
 		uint32_t version;
 		
 		/* Specific */
-		rtinfo_network_legacy_t net[];	/* Warning: limited to 16 interfaces */
+		rtinfo_network_legacy_t net[];
 		
 	} __attribute__ ((packed)) netinfo_packed_net_t;
 #endif

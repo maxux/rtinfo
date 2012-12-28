@@ -11,6 +11,7 @@
 #include "../rtinfo-common/socket.h"
 #include "server.h"
 #include "server_display.h"
+#include "server_socket.h"
 
 extern int nbclients;
 char *units[] = {"Ko", "Mo", "Go", "To"};
@@ -18,7 +19,7 @@ char *uptime_units[] = {"m", "h", "d"};
 
 pthread_mutex_t mutex_screen;
 
-int x, y;
+int __maxx, __maxy;
 
 /* Network rate colors */
 int rate_limit[] = {
@@ -67,13 +68,13 @@ size_t battery_picto_size = 6;
 #define LEVEL_HIGH	(A_BOLD | COLOR_PAIR(4))
 
 void initdisplay() {
-	getmaxyx(stdscr, y, x);
+	getmaxyx(stdscr, __maxy, __maxx);
 	
-	wdebug = newwin(1, WINDOW_WIDTH, y - 2, 0);
+	wdebug = newwin(1, WINDOW_WIDTH, __maxy - 2, 0);
 	wattrset(wdebug, A_BOLD | COLOR_PAIR(4));
 }
 
-void netmoveunder(client_t *root, int offset) {
+/* void netmoveunder(client_t *root, int offset) {
 	// Moving all others...
 	while(root) {
 		root->nety += offset;
@@ -82,7 +83,7 @@ void netmoveunder(client_t *root, int offset) {
 		
 		root = root->next;
 	}
-}
+} */
 
 void separe(WINDOW *win, char wide) {
 	int attrs;
@@ -114,11 +115,6 @@ void title(WINDOW *win, char *title, int length, char eol) {
 void split(WINDOW *win) {
 	wattrset(win, COLOR_PAIR(2));
 	whline(win, ACS_HLINE, WINDOW_WIDTH - 1);
-}
-
-void refresh_whole() {
-	// show_header();
-	// show_net_header();
 }
 
 void build_header(WINDOW *win) {
@@ -153,15 +149,13 @@ void build_netheader(WINDOW *win) {
 	wrefresh(win);
 }
 
-void joining(client_t *client) {
+void preparing_client(client_t *client) {
 	/* Summary */
 	wattrset(client->window, A_BOLD | COLOR_PAIR(5));
 	
 	wprintw(client->window, " %-14s", client->name);
 	separe(client->window, 1);
-	wprintw(client->window, "New client, waiting summary data...");
-	
-	wattrset(client->window, A_BOLD | COLOR_PAIR(1));
+	wprintw(client->window, "Waiting summary data...");
 	wrefresh(client->window);
 	
 	/* Network */
@@ -169,10 +163,38 @@ void joining(client_t *client) {
 	
 	wprintw(client->netwindow, " %-14s", client->name);
 	separe(client->netwindow, 1);
-	wprintw(client->netwindow, "New client, waiting network data...");
+	wprintw(client->netwindow, "Waiting network data...\n");
 	
 	wattrset(client->netwindow, A_BOLD | COLOR_PAIR(1));
+	split(client->netwindow);
+
 	wrefresh(client->netwindow);
+}
+
+void redraw_network(client_t *root) {
+	client_t *client = root;
+	unsigned int nety = root->nety;
+	WINDOW *clear;
+
+	while(client) {
+		/* Update line */
+		client->nety = nety;
+
+		mvwin(client->netwindow, client->nety, client->netx);
+		wrefresh(client->netwindow);
+
+		nety = client->nety + client->dspiface + 1; /* dspiface + split line */
+
+		/* Next client */
+		client = client->next;
+	}
+
+	if(__maxy - nety - 2 > 0) {
+		clear = newwin(__maxy - nety - 2, WINDOW_WIDTH, nety, 0);
+		wclear(clear);
+		wrefresh(clear);
+		delwin(clear);
+	}
 }
 
 double sizeroundd(uint64_t size) {
@@ -223,7 +245,7 @@ char * uptime_unit(rtinfo_uptime_t *uptime) {
 	return uptime_units[2];
 }
 
-void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t *client) {
+void show_packet(struct sockaddr_in *remote, client_t *client) {
 	int i;
 	float memory_percent, swap_percent;
 	struct tm * timeinfo;
@@ -235,32 +257,32 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 	
 	wattrset(client->window, COLOR_PAIR(1));
 	
-	packed->hostname[14] = '\0';
+	client->summary->hostname[14] = '\0';
 	wattrset(client->window, A_BOLD | COLOR_PAIR(7));
-	wprintw(client->window, " %-14s", packed->hostname);
+	wprintw(client->window, " %-14s", client->summary->hostname);
 	
 	/* Print CPU Usage */
 	separe(client->window, 1);
 	
 	/* Only print Average */
-	if(packed->cpu[0].usage > cpu_limit[2])
+	if(client->summary->cpu[0].usage > cpu_limit[2])
 		wattrset(client->window, LEVEL_HIGH);
 		
-	else if(packed->cpu[0].usage > cpu_limit[1])
+	else if(client->summary->cpu[0].usage > cpu_limit[1])
 		wattrset(client->window, LEVEL_WARN);
 	
-	else if(packed->cpu[0].usage > cpu_limit[0])
+	else if(client->summary->cpu[0].usage > cpu_limit[0])
 		wattrset(client->window, LEVEL_ACTIVE);
 		
 	else wattrset(client->window, LEVEL_COLD);
 	
-	wprintw(client->window, "%3d%%/% 2d ", packed->cpu[0].usage, packed->nbcpu - 1);
+	wprintw(client->window, "%3d%%/% 2d ", client->summary->cpu[0].usage, client->summary->nbcpu - 1);
 	wattrset(client->window, COLOR_PAIR(1));
 	
 	
 	/* Print Memory Usage */
 	separe(client->window, 1);
-	memory_percent = ((float) packed->memory.ram_used / packed->memory.ram_total) * 100;
+	memory_percent = ((float) client->summary->memory.ram_used / client->summary->memory.ram_total) * 100;
 	
 	if(memory_percent > memory_limit[2])
 		wattrset(client->window, LEVEL_HIGH);
@@ -273,12 +295,12 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 	
 	else wattrset(client->window, LEVEL_COLD);
 	
-	wprintw(client->window, "%5lld Mo (%2.0f%%)", packed->memory.ram_used / 1024, memory_percent);
+	wprintw(client->window, "%5lld Mo (%2.0f%%)", client->summary->memory.ram_used / 1024, memory_percent);
 	wattrset(client->window, COLOR_PAIR(1));
 	
 	separe(client->window, 1);
-	if(packed->memory.swap_total > 0) {
-		swap_percent = ((float) (packed->memory.swap_total - packed->memory.swap_free) / packed->memory.swap_total) * 100;
+	if(client->summary->memory.swap_total > 0) {
+		swap_percent = ((float) (client->summary->memory.swap_total - client->summary->memory.swap_free) / client->summary->memory.swap_total) * 100;
 		
 		if(swap_percent > memory_limit[2])
 			wattrset(client->window, LEVEL_HIGH);
@@ -295,7 +317,7 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 		if(swap_percent == 100)
 			swap_percent = 99;
 			
-		wprintw(client->window, "%5lld Mo (%2.0f%%)", (packed->memory.swap_total - packed->memory.swap_free) / 1024, swap_percent);
+		wprintw(client->window, "%5lld Mo (%2.0f%%)", (client->summary->memory.swap_total - client->summary->memory.swap_free) / 1024, swap_percent);
 		
 	} else {
 		wattrset(client->window, A_BOLD | COLOR_PAIR(8));	/* Magenta */
@@ -307,18 +329,18 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 	separe(client->window, 1);
 	
 	for(i = 0; i < 3; i++) {
-		if(((float) packed->loadavg[i] / 100) >= packed->nbcpu - 1)
+		if(((float) client->summary->loadavg[i] / 100) >= client->summary->nbcpu - 1)
 			wattrset(client->window, LEVEL_HIGH);
 			
-		else if(((float) packed->loadavg[i] / 100) > (packed->nbcpu / 2))
+		else if(((float) client->summary->loadavg[i] / 100) > (client->summary->nbcpu / 2))
 			wattrset(client->window, LEVEL_WARN);
 		
-		else if(((float) packed->loadavg[i] / 100) > 0.4)
+		else if(((float) client->summary->loadavg[i] / 100) > 0.4)
 			wattrset(client->window, LEVEL_ACTIVE);
 		
 		else wattrset(client->window, LEVEL_COLD);
 		
-		wprintw(client->window, "% 6.2f ", ((float) packed->loadavg[i] / 100));
+		wprintw(client->window, "% 6.2f ", ((float) client->summary->loadavg[i] / 100));
 	}
 	
 	separe(client->window, 0);
@@ -332,34 +354,34 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 	/* Print remote time */
 	separe(client->window, 1);
 	
-	timeinfo = localtime((time_t*) &packed->timestamp);
+	timeinfo = localtime((time_t*) &client->summary->timestamp);
 	wprintw(client->window, "%02d:%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
 	
 	/* Print remote uptime */
 	separe(client->window, 1);
-	wprintw(client->window, "% 4d %s", uptime_value(&packed->uptime), uptime_unit(&packed->uptime));
+	wprintw(client->window, "% 4d %s", uptime_value(&client->summary->uptime), uptime_unit(&client->summary->uptime));
 	
 	/* Print remote battery status */
 	separe(client->window, 1);
-	if(packed->battery.load != -1) {
-		if(packed->battery.status != CHARGING) {
-			if(packed->battery.load < battery_limit[0])
+	if(client->summary->battery.load != -1) {
+		if(client->summary->battery.status != CHARGING) {
+			if(client->summary->battery.load < battery_limit[0])
 				wattrset(client->window, LEVEL_HIGH);
 				
-			else if(packed->battery.load < battery_limit[1])
+			else if(client->summary->battery.load < battery_limit[1])
 				wattrset(client->window, LEVEL_WARN);
 			
-			else if(packed->battery.load < battery_limit[2])
+			else if(client->summary->battery.load < battery_limit[2])
 				wattrset(client->window, LEVEL_ACTIVE);
 			
 			else wattrset(client->window, LEVEL_COLD);
 			
 		} else wattrset(client->window, RATE_LOW);
 		
-		if(packed->battery.status < battery_picto_size)
-			wprintw(client->window, "%c%3d%%%", battery_picto[packed->battery.status], packed->battery.load);
+		if(client->summary->battery.status < battery_picto_size)
+			wprintw(client->window, "%c%3d%%%", battery_picto[client->summary->battery.status], client->summary->battery.load);
 			
-		else wprintw(client->window, "Err. ", packed->battery.load);
+		else wprintw(client->window, "Err. ", client->summary->battery.load);
 		
 	} else {
 		wattrset(client->window, A_BOLD | COLOR_PAIR(8));	/* Magenta */
@@ -369,47 +391,47 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 	/* Print remote coretemp value */
 	separe(client->window, 1);
 	
-	if(!packed->temp_cpu.critical)
-		packed->temp_cpu.critical = 100;
+	if(!client->summary->temp_cpu.critical)
+		client->summary->temp_cpu.critical = 100;
 		
-	if(packed->temp_cpu.cpu_average > 0) {
-		if(packed->temp_cpu.cpu_average > packed->temp_cpu.critical * 0.8)
+	if(client->summary->temp_cpu.cpu_average > 0) {
+		if(client->summary->temp_cpu.cpu_average > client->summary->temp_cpu.critical * 0.8)
 			wattrset(client->window, LEVEL_HIGH);
 		
-		else if(packed->temp_cpu.cpu_average > packed->temp_cpu.critical * 0.6)
+		else if(client->summary->temp_cpu.cpu_average > client->summary->temp_cpu.critical * 0.6)
 			wattrset(client->window, LEVEL_WARN);
 			
 		else wattrset(client->window, LEVEL_COLD);
 		
-		wprintw(client->window, "% 3d", packed->temp_cpu.cpu_average);
+		wprintw(client->window, "% 3d", client->summary->temp_cpu.cpu_average);
 		
 	} else wprintw(client->window, "   ");
 	
 	wattrset(client->window, LEVEL_COLD);
 	wprintw(client->window, " / ");
 	
-	if(packed->temp_hdd.hdd_average > 0) {
-		if(packed->temp_hdd.hdd_average > hdd_limit[1])
+	if(client->summary->temp_hdd.hdd_average > 0) {
+		if(client->summary->temp_hdd.hdd_average > hdd_limit[1])
 			wattrset(client->window, LEVEL_HIGH);
 		
-		else if(packed->temp_hdd.hdd_average > hdd_limit[0])
+		else if(client->summary->temp_hdd.hdd_average > hdd_limit[0])
 			wattrset(client->window, LEVEL_WARN);
 			
 		else wattrset(client->window, LEVEL_COLD);
 		
-		wprintw(client->window, "% 2d ", packed->temp_hdd.hdd_average);
+		wprintw(client->window, "% 2d ", client->summary->temp_hdd.hdd_average);
 	}
 	
-	if(packed->temp_hdd.peak > 0) {
-		if(packed->temp_hdd.peak > hdd_limit[1])
+	if(client->summary->temp_hdd.peak > 0) {
+		if(client->summary->temp_hdd.peak > hdd_limit[1])
 			wattrset(client->window, LEVEL_HIGH);
 		
-		else if(packed->temp_hdd.peak > hdd_limit[0])
+		else if(client->summary->temp_hdd.peak > hdd_limit[0])
 			wattrset(client->window, LEVEL_WARN);
 			
 		else wattrset(client->window, LEVEL_COLD);
 		
-		wprintw(client->window, "(%d)", packed->temp_hdd.peak);
+		wprintw(client->window, "(%d)", client->summary->temp_hdd.peak);
 		
 	} else wprintw(client->window, "    ");
 	
@@ -421,9 +443,12 @@ void show_packet(netinfo_packed_t *packed, struct sockaddr_in *remote, client_t 
 	pthread_mutex_unlock(&mutex_screen);
 }
 
-void show_packet_network(netinfo_packed_net_t *net, client_t *client) {
-	uint32_t i;
-	int reduce = 0;
+void show_packet_network(client_t *client, char redraw) {
+	uint32_t i, olddspiface;
+	rtinfo_network_legacy_t *read = client->net->net;
+	char strip[16], ifname[64];
+	uint16_t speed;
+
 	
 	/* Console too small */
 	/* if(nbclients + 5 + client->line + client->nbiface > y)
@@ -434,16 +459,35 @@ void show_packet_network(netinfo_packed_net_t *net, client_t *client) {
 	
 	wmove(client->netwindow, 0, 0);
 	
-	// Grow/Shrink window
-	if(net->nbiface != client->nbiface)
-		wresize(client->netwindow, net->nbiface + 1, WINDOW_WIDTH);
+	/* Growing window */
+	wresize(client->netwindow, client->net->nbiface + 1, WINDOW_WIDTH);
+
+	/* Starting with the highest interface count */
+	olddspiface      = client->dspiface;
+	client->dspiface = client->net->nbiface;
 	
-	for(i = 0; i < net->nbiface; i++) {
-		/* Hide Interfaces without ip and hide loopback interface */
-		if((!*(net->net[i].ip) && !net->net[i].speed) || !strncmp(net->net[i].ip, "127.0.0.1", 9)) {
-			reduce++;
-			continue;
+	for(i = 0; i < client->net->nbiface; i++) {
+		if(read->name_length > sizeof(ifname)) {
+			client->dspiface--;
+			goto next_read;
 		}
+
+		strncpy(ifname, read->name, read->name_length);
+		ifname[read->name_length] = '\0';
+
+		if(!inet_ntop(AF_INET, &read->ip, strip, sizeof(strip))) {
+			client->dspiface--;
+			goto next_read;
+		}
+
+		/* Hide interfaces without ip and hide loopback interface */
+		if((!read->ip && !read->speed) || !strncmp(strip, "127.0.0.1", 9)) {
+			client->dspiface--;
+			goto next_read;
+		}
+
+		/* Formating binaries */
+		convert_packed_net(read);
 	
 		/* Hostname */
 		wattrset(client->netwindow, A_BOLD | COLOR_PAIR(7));
@@ -452,85 +496,106 @@ void show_packet_network(netinfo_packed_net_t *net, client_t *client) {
 		
 		/* Interface */
 		wattrset(client->netwindow, COLOR_PAIR(1));
-		wprintw(client->netwindow, " %-12s ", net->net[i].name);
+		wprintw(client->netwindow, " %-12s ", ifname);
 		separe(client->netwindow, 0);
 		
-		if(net->net[i].down_rate > rate_limit[3])
+		if(read->down_rate > rate_limit[3])
 			wattrset(client->netwindow, RATE_HIGH);
 			
-		else if(net->net[i].down_rate > rate_limit[2])
+		else if(read->down_rate > rate_limit[2])
 			wattrset(client->netwindow, RATE_MIDDLE);
 		
-		else if(net->net[i].down_rate > rate_limit[1])
+		else if(read->down_rate > rate_limit[1])
 			wattrset(client->netwindow, RATE_LOW);
 		
-		else if(net->net[i].down_rate > rate_limit[0])
+		else if(read->down_rate > rate_limit[0])
 			wattrset(client->netwindow, RATE_ACTIVE);
 		
 		else wattrset(client->netwindow, RATE_COLD);
 		
-		wprintw(client->netwindow, " % 15.2f %s/s", sizeroundd(net->net[i].down_rate), unitround(net->net[i].down_rate));
+		wprintw(client->netwindow, " % 15.2f %s/s", sizeroundd(read->down_rate), unitround(read->down_rate));
 		separe(client->netwindow, 1);
 		
 		wattrset(client->netwindow, COLOR_PAIR(1));
-		wprintw(client->netwindow, "% 10.2f %s", sizeroundd(net->net[i].current.down), unitround(net->net[i].current.down));
+		wprintw(client->netwindow, "% 10.2f %s", sizeroundd(read->current.down), unitround(read->current.down));
 		
 		separe(client->netwindow, 1);
-		if(net->net[i].up_rate > rate_limit[3])
+		if(read->up_rate > rate_limit[3])
 			wattrset(client->netwindow, RATE_HIGH);
 			
-		else if(net->net[i].up_rate > rate_limit[2])
+		else if(read->up_rate > rate_limit[2])
 			wattrset(client->netwindow, RATE_MIDDLE);
 		
-		else if(net->net[i].up_rate > rate_limit[1])
+		else if(read->up_rate > rate_limit[1])
 			wattrset(client->netwindow, RATE_LOW);
 		
-		else if(net->net[i].up_rate > rate_limit[0])
+		else if(read->up_rate > rate_limit[0])
 			wattrset(client->netwindow, RATE_ACTIVE);
 		
 		else wattrset(client->netwindow, RATE_COLD);
 		
-		wprintw(client->netwindow, "% 15.2f %s/s", sizeroundd(net->net[i].up_rate), unitround(net->net[i].up_rate));
+		wprintw(client->netwindow, "% 15.2f %s/s", sizeroundd(read->up_rate), unitround(read->up_rate));
 		separe(client->netwindow, 1);
 		
 		wattrset(client->netwindow, COLOR_PAIR(1));
-		wprintw(client->netwindow, "% 8.2f %s", sizeroundd(net->net[i].current.up), unitround(net->net[i].current.up));
+		wprintw(client->netwindow, "% 8.2f %s", sizeroundd(read->current.up), unitround(read->current.up));
 		
 		/* Print IP */
 		separe(client->netwindow, 1);
 		
 		/* Highlight public address */
-		if(strncmp(net->net[i].ip, "10.", 3) && strncmp(net->net[i].ip, "172.16.", 7) && strncmp(net->net[i].ip, "192.168.", 7))
+		if(strncmp(strip, "10.", 3) && strncmp(strip, "172.16.", 7) && strncmp(strip, "192.168.", 7))
 			wattrset(client->netwindow, A_BOLD | COLOR_PAIR(7));
 			
-		wprintw(client->netwindow, "%-16s ", net->net[i].ip);
+		wprintw(client->netwindow, "%-16s ", strip);
 		wattrset(client->netwindow, COLOR_PAIR(1));
 		
 		separe(client->netwindow, 1);
 		
+		speed = packed_speed_rtinfo(read->speed);
+
 		/* Print Speed */
-		if(!net->net[i].speed) {
+		if(!speed) {
 			wattrset(client->netwindow, RATE_COLD);
 			wprintw(client->netwindow, "Unknown\n");
 			
-		} else wprintw(client->netwindow, "%d Mbps\n", net->net[i].speed);
+		} else wprintw(client->netwindow, "%d Mbps\n", speed);
+
+		next_read:
+		read = (rtinfo_network_legacy_t*) ((char*) read + sizeof(rtinfo_network_legacy_t) + read->name_length);
 	}
 	
-	split(client->netwindow);
 	wclrtoeol(client->netwindow);
 	
-	// Shrink if necessary
-	if(net->nbiface - reduce != client->nbiface) {
-		wresize(client->netwindow, net->nbiface + 1, WINDOW_WIDTH);
+	if(client->dspiface == 0) {
+		client->dspiface = 1;
 		
-		// Redrawing all networks below
-		netmoveunder(client->next, net->nbiface - reduce - client->nbiface);
+		wmove(client->netwindow, 0, 0);
+		wresize(client->netwindow, 2, WINDOW_WIDTH);
 		
-		// Saving new value
-		client->nbiface = net->nbiface - reduce;
+		wattrset(client->netwindow, A_BOLD | COLOR_PAIR(7));
+		wprintw(client->netwindow, " %-14s ", client->name);
+		separe(client->netwindow, 0);
+
+		wattrset(client->netwindow, RATE_COLD);
+		wprintw(client->netwindow, " Nothing to display\n");
+
+		goto skip_shrink;
+	}
+
+	/* Shrink if necessary */
+	wresize(client->netwindow, client->dspiface + 1, WINDOW_WIDTH);
+
+	if(client->dspiface != olddspiface && redraw) {
+		/* Redrawing all networks below */
+		pthread_mutex_unlock(&mutex_screen);
+		redraw_network(client);
+		pthread_mutex_lock(&mutex_screen);
 	}
 	
-	wrefresh(client->netwindow);	
+	skip_shrink:
+		split(client->netwindow);
+		wrefresh(client->netwindow);
 	
 	/* Unlocking screen */
 	pthread_mutex_unlock(&mutex_screen);

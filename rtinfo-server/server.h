@@ -3,7 +3,7 @@
 	
 	#include <time.h>
 	
-	#define BUFFER_SIZE		1024
+	#define BUFFER_SIZE		65535   /* should not exceed udp limit */
 	#define REQUIRED_LIB_VERSION	4.00
 	
 	#define WINDOW_WIDTH		148
@@ -13,10 +13,13 @@
 		char name[32];
 		time_t last;
 		
-		uint32_t nbiface;
+		uint32_t dspiface;
 		
 		struct netinfo_packed_t *summary;
+		size_t summary_length;
+
 		struct netinfo_packed_net_t *net;
+		size_t net_length;
 		
 		WINDOW *window;
 		WINDOW *netwindow;
@@ -32,8 +35,8 @@
 	extern WINDOW *wdebug;
 	extern int nbclients, newnety;
 	
-	#define debug(format, ...)	wmove(wdebug, 0, 0); \
+	#define debug(format, ...)	{ wmove(wdebug, 0, 0); \
 					wprintw(wdebug, format, __VA_ARGS__); \
 					wclrtoeol(wdebug); \
-					wrefresh(wdebug);
+					wrefresh(wdebug); }
 #endif

@@ -67,7 +67,7 @@ void stack_timeout(client_t *root, time_t timeout, int colorpair) {
 			/* Network */
 			wattrset(root->netwindow, A_BOLD | COLOR_PAIR(colorpair));
 
-			for(i = 0; i < root->nbiface; i++) {
+			for(i = 0; i < root->dspiface; i++) {
 				wmove(root->netwindow, i, 0);
 				wprintw(root->netwindow, " %-14s ", root->name);
 			}				
@@ -105,39 +105,43 @@ void * stack_ping(void *dummy) {
 	return dummy;
 }
 
-client_t * stack_newclient(netinfo_packed_t *buffer, int clientid) {
+client_t * stack_newclient(netinfo_packed_t *buffer) {
 	client_t *client;
 	
 	client = (client_t*) malloc(sizeof(client_t));
 			
-	client->id      = clientid;
-	client->nbiface = 1;
-	client->last    = time(NULL);
+	client->id       = nbclients++;
+	client->dspiface = 1;
+	client->last     = time(NULL);
 	
 	strncpy(client->name, buffer->hostname, sizeof(client->name));
 	client->name[sizeof(client->name) - 1] = '\0';
 	
 	// Windows positions
+	client->winy      = client->id + 1;
 	client->winx      = 0;
-	client->winy      = clientid + 2;
 	client->window    = newwin(2, WINDOW_WIDTH, client->winy, 0);
 	
+
+	/* last y + dsp iface + split bar + newline */
+	client->nety      = lastclient->nety + lastclient->dspiface + 1;
 	client->netx      = 0;
-	client->nety      = lastclient->nety + lastclient->nbiface + 2;
 	client->netwindow = newwin(2, WINDOW_WIDTH, client->nety, 0);
 	
-	// New line on summary, moving all under
-	netmoveunder(clients, 1);
+	client->summary   = NULL;
+	client->net       = NULL;
 	
-	// Add client on the stack, become the last client
+	/* Add client on the stack, become the last client */
 	if(!stack_client(client)) {
 		fprintf(stderr, "[-] stacking client failed\n");
 		exit(EXIT_FAILURE);
 	}
 	
-	joining(client);
+	/* Updating headers */
+	clients->nety++;
 	
-	nbclients++;
+	preparing_client(client);
+	redraw_network(clients);
 	
 	return client;
 }

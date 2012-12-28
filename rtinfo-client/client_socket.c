@@ -12,6 +12,54 @@
 #include "client_socket.h"
 #include "client.h"
 
+uint8_t rtinfo_speed_packed(uint16_t speed) {
+	switch (speed) {
+		case 10:
+			return NETINFO_NET_SPEED_10;
+
+		case 100:
+			return NETINFO_NET_SPEED_100;
+
+		case 1000:
+			return NETINFO_NET_SPEED_1000;
+		break;
+
+		case 2500:
+			return NETINFO_NET_SPEED_2500;
+		break;
+
+		case 10000:
+			return NETINFO_NET_SPEED_10000;
+	}
+
+	return NETINFO_NET_SPEED_UNK;
+}
+
+size_t netbuild_assemble(rtinfo_network_legacy_t *read, rtinfo_network_if_t *intf) {
+	struct sockaddr_in ipconv;
+
+	/* Just convert data */
+	read->current.up   = htobe64(intf->current.up);
+	read->current.down = htobe64(intf->current.down);
+	read->up_rate      = htobe64(intf->up_rate);
+	read->down_rate    = htobe64(intf->down_rate);
+
+	/* Legacy convertion from librtinfo speed */
+	read->speed        = rtinfo_speed_packed(intf->speed);
+
+	/* Reading ip */
+	if(inet_pton(AF_INET, intf->ip, &ipconv.sin_addr))
+		read->ip = ipconv.sin_addr.s_addr;
+
+	else read->ip = 0;
+
+	/* Building name */
+	read->name_length = strlen(intf->name);
+	strncpy(read->name, intf->name, read->name_length);
+
+	return sizeof(rtinfo_network_legacy_t) + read->name_length;
+}
+
 int netinfo_socket(char *server, int port, struct sockaddr_in *remote) {
 	int sockfd;
 	struct hostent *hent;
@@ -37,10 +85,7 @@ int netinfo_send_packed(int sockfd, netinfo_packed_t *packed, size_t size, const
 	
 	/* Converting packet for network endian */
 	// packed->nbcpu = htobe32(packed->nbcpu);
-	// Note: nbcpu is converted once, on the header built
-	
-	// FIXME
-	// for(i = 0; i < packed->nbcpu; i++) 
+	// Note: nbcpu is converted once, on the header build
 	
 	packed->memory.ram_total  = htobe64(packed->memory.ram_total);
 	packed->memory.ram_used   = htobe64(packed->memory.ram_used);
