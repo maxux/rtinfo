@@ -1,7 +1,7 @@
-EXEC = rtinfo-client
+EXEC = rtinfo-ncurses
 
 VERSION = 0.1
 CFLAGS  = -W -Wall -O2 -pipe -ansi -std=gnu99 -g
-LDFLAGS = -lrtinfo
+LDFLAGS = -lncurses -ljansson
 
 CC = gcc

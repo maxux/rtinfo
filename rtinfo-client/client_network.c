@@ -12,7 +12,7 @@
 #include "byte_conversions.h"
 #include "client_socket.h"
 #include "client_network.h"
-#include "client.h"
+#include "rtinfo_client.h"
 
 void dump(unsigned char *data, unsigned int len) {
 	unsigned int i, j;
@@ -25,22 +25,22 @@ void dump(unsigned char *data, unsigned int len) {
 		
 		if(i % 16 == 0) {
 			printf("|");
-
+			
 			for(j = i - 16; j < i; j++)
 				printf("%c", ((isalnum(data[j]) ? data[j] : '.')));
-
+						
 			printf("|\n[ ] 0x%04x: ", i);
 		}
 	}
 	
 	if(i % 16) {
 		printf("%-*s", 5 * (16 - (i % 16)), " ");
-
+		
 		printf("|");
-
+		
 		for(j = i - (i % 16); j < len; j++)
 			printf("%c", ((isalnum(data[j]) ? data[j] : '.')));
-
+					
 		printf("%-*s|\n", 16 - (len % 16), " ");
 	}
 }
@@ -68,20 +68,20 @@ int networkside(char *server, int port) {
 	int sockfd;
 	unsigned int i, oldnbiface;
 	
-	printf("[+] Starting rtinfo network client (version %u)\n", CLIENT_VERSION);
-	printf("[ ] Using librtinfo version %.2f\n", rtinfo_version());
+	printf("[+] Starting rtinfo network client (version %.3f)\n", CLIENT_VERSION);
+	printf("[ ] librtinfo version      : %.2f\n", rtinfo_version());
 	
 	printf("[ ] netinfo_packed_t       : %u bytes\n", sizeof(netinfo_packed_t));
 	printf("[ ] netinfo_packed_net_t   : %u bytes\n", sizeof(netinfo_packed_net_t));
 	printf("[ ] rtinfo_network_legacy_t: %u bytes\n", sizeof(rtinfo_network_legacy_t));
-
+	
 	/*
 	 * Initializing Network
 	 */
 	truenet = rtinfo_init_network();
 	oldnbiface = -1;
 	
-
+		
 	/*
 	 * Initializing CPU
 	 */
@@ -92,10 +92,10 @@ int networkside(char *server, int port) {
 	
 	/* Building 'netbuild' memory area with dynamic extra content (like interfaces) */
 	packedbuild_size = sizeof(netinfo_packed_t) + cpu_size;
-	packedbuild = (char*) malloc(packedbuild_size);
+	packedbuild = (char*) calloc(1, packedbuild_size);
 	
-	printf("[ ] packedbuild_size: %u bytes\n", packedbuild_size);
-
+	printf("[ ] packedbuild_size       : %u bytes\n", packedbuild_size);
+	
 	/* Casting to avoid shit code */
 	packed_cast = (netinfo_packed_t*) packedbuild;
 	
@@ -109,11 +109,11 @@ int networkside(char *server, int port) {
 	/*
 	 * Initializing Socket
 	 */
-	printf("[+] Connecting [%s:%d]...\n", server, port);
+	printf("[+] connecting             : %s:%d\n", server, port);
 	
 	if((sockfd = netinfo_socket(server, port, &remote)) == -1) {
 		fprintf(stderr, "[-] Cannot resolve host: %s\n", server);
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	
 	/* Authentificating */
@@ -135,13 +135,12 @@ int networkside(char *server, int port) {
 	}
 	
 	/* Checking version */
-	if(packed_cast->version != CLIENT_VERSION) {
-		fprintf(stderr, "[-] Version client/server (%u/%u) mismatch\n", CLIENT_VERSION, packed_cast->version);
+	if((int)((float) packed_cast->version) != (int) CLIENT_VERSION) {
+		fprintf(stderr, "[-] Version client/server (%f/%f) mismatch\n", CLIENT_VERSION, (float) packed_cast->version);
 		exit(EXIT_FAILURE);
 	}
 		
-	printf("[+] Client id: %d\n", packed_cast->clientid);
-	printf("[+] Server version: %u\n", packed_cast->version);
+	printf("[+] server version match   : %d.x\n", packed_cast->version);
 	
 	
 	/*
@@ -149,8 +148,6 @@ int networkside(char *server, int port) {
 	 */
 	packed_cast->options   = htobe32(0);	/* FIXME: Not used at this time */
 	packed_cast->version   = htobe32(CLIENT_VERSION);
-	
-	printf("[+] Sending data...\n");
 	
 	/* Pre-reading data */
 	rtinfo_get_cpu(cpu);
@@ -216,10 +213,10 @@ int networkside(char *server, int port) {
 				<--- sizeof(netinfo_packed_net_t) ---> <---         sizeof(info_network_legacy_t) * nbifaces        --->
 			*/
 			netbuild_size = sizeof(netinfo_packed_net_t) + legacy_size;
-			netbuild = (char*) malloc(netbuild_size);
+			netbuild = (char*) calloc(1, netbuild_size);
 			
-			printf("[ ] netbuild_size: %u bytes\n", netbuild_size);
-
+			printf("[ ] netbuild_size          : %u bytes\n", netbuild_size);
+			
 			/* Casting for clean code */
 			netbuild_cast = (netinfo_packed_net_t*) netbuild;
 			
@@ -234,17 +231,17 @@ int networkside(char *server, int port) {
 			/* Saving value */
 			oldnbiface = truenet->nbiface;
 		}
-
+		
 		/* Formating data */
 		netbuild_effective_size = sizeof(netinfo_packed_net_t) + (sizeof(rtinfo_network_legacy_t) * truenet->nbiface);
 		readnet = netbuild_cast->net;
-
+		
 		for(i = 0; i < truenet->nbiface; i++) {
 			netsize = netbuild_assemble(readnet, (truenet->net + i));
 			netbuild_effective_size += readnet->name_length;
 			
 			/* dump(readnet, netsize); */
-
+			
 			readnet = (rtinfo_network_legacy_t*) ((char*) readnet + netsize);
 		}
 		

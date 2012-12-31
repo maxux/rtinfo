@@ -1,5 +1,5 @@
-#ifndef __IP_HEADER
-	#define __IP_HEADER
+#ifndef __RTINFOD_IP_H
+	#define __RTINFOD_IP_H
 	
 	int ip_mkmask(int imask);
 	int ip_mkip(char *ip);

@@ -3,18 +3,6 @@ include config.mk
 SRC=$(wildcard *.c)
 OBJ=$(SRC:.c=.o)
 
-ifdef SystemRoot
-	# Windows
-	RM   = del /Q
-	EXEC := $(EXEC).exe
-else
-	RM  = rm -fv
-	
-	ifneq ($(wildcard /usr/include/endian.h),)
-		CFLAGS += -DHAVE_ENDIAN_H
-	endif
-endif
-
 all: options $(EXEC)
 
 options: config.mk
@@ -30,8 +18,8 @@ $(EXEC): $(OBJ)
 	$(CC) $(CFLAGS) -c $<
 
 clean:
-	$(RM) *.o
+	rm -fv *.o
 
 mrproper: clean
-	$(RM) $(EXEC)
+	rm -fv $(EXEC)
 

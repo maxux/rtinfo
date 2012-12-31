@@ -7,10 +7,11 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <rtinfo.h>
 #include "../rtinfo-common/socket.h"
 #include "byte_conversions.h"
 #include "client_socket.h"
-#include "client.h"
+#include "rtinfo_client.h"
 
 uint8_t rtinfo_speed_packed(uint16_t speed) {
 	switch (speed) {

@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <rtinfo.h>
-#include "client.h"
+#include "rtinfo_client.h"
 #include "client_network.h"
 
 void diep(char *str) {
@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 	}
 	
 	if(argc < 2) {
-		fprintf(stderr, "Usage: ./%s server [port]\n", argv[0]);
+		fprintf(stderr, "Usage: %s server [port]\n", argv[0]);
 		exit(EXIT_FAILURE);
 		
 	} else port = (argc > 2) ? atoi(argv[2]) : DEFAULT_PORT;

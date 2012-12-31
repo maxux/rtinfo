@@ -1,10 +1,9 @@
 #ifndef __RTINFO_COMMON_H
 	#define __RTINFO_COMMON_H
 	
-	#include <rtinfo.h>
-	#include <netinet/in.h>
+	#define INPUT_DEFAULT_PORT     9930
+	#define OUTPUT_DEFAULT_PORT    8089
 	
-	#define DEFAULT_PORT	9930
 	
 	typedef enum netinfo_options_t {
 		QRY_SOCKET	= 1,
@@ -27,9 +26,9 @@
 		NETINFO_NET_SPEED_1000  = 3,
 		NETINFO_NET_SPEED_2500  = 4,
 		NETINFO_NET_SPEED_10000 = 5,
-
+		
 	} netinfo_speed_t;
-
+	
 	typedef struct rtinfo_cpu_legacy_t {
 		uint8_t usage;            /* CPU usage (in percent) */
 		
@@ -51,7 +50,7 @@
 		rtinfo_temp_hdd_t temp_hdd;
 		rtinfo_uptime_t uptime;
 		uint64_t timestamp;
-		rtinfo_cpu_legacy_t cpu[];     /* Note: limited for udp */
+		rtinfo_cpu_legacy_t cpu[];
 		
 	} __attribute__ ((packed)) netinfo_packed_t;
 	

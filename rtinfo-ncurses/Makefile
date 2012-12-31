@@ -15,7 +15,7 @@ $(EXEC): $(OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 %.o: %.c
-	$(CC) -o $@ -c $< $(CFLAGS)
+	$(CC) $(CFLAGS) -c $<
 
 clean:
 	rm -fv *.o
