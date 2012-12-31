@@ -97,7 +97,7 @@ void * thread_input(void *data) {
 			
 			/* ip disallowed */
 			if(i != -1) {
-				verbose("Warning: denied packed received from: %s", inet_ntoa(remote.sin_addr));				
+				verbose("Warning: denied packed received from: %s\n", inet_ntoa(remote.sin_addr));				
 				continue;
 			}
 		}
@@ -131,7 +131,7 @@ void * thread_input(void *data) {
 		
 		/* Version Check */
 		if(packed->version != (unsigned int) (SERVER_VERSION)) {
-			warning("[-] input: warning: invalid version (%u) from %s (%s)", packed->version, inet_ntoa(remote.sin_addr), packed->hostname);
+			warning("[-] input: warning: invalid version (%u) from %s (%s)\n", packed->version, inet_ntoa(remote.sin_addr), packed->hostname);
 			goto unlock;
 		}
 		
@@ -144,7 +144,7 @@ void * thread_input(void *data) {
 			checklength = sizeof(netinfo_packed_net_t) + (sizeof(rtinfo_network_legacy_t) * net->nbiface) + (net->nbiface * 32);
 			
 			if((size_t) recvsize > checklength) {
-				warning("[-] input: warning: wrong network summary datasize (%d bytes) from %s, should be <= %u bytes.",  recvsize, inet_ntoa(remote.sin_addr), checklength);
+				warning("[-] input: warning: wrong network summary datasize (%d bytes) from %s, should be <= %u bytes.\n",  recvsize, inet_ntoa(remote.sin_addr), checklength);
 				goto unlock;
 			}
 			
@@ -153,7 +153,7 @@ void * thread_input(void *data) {
 			checklength = sizeof(netinfo_packed_t) + (sizeof(rtinfo_cpu_legacy_t) * be32toh(packed->nbcpu));
 			
 			if((size_t) recvsize != checklength) {
-				warning("[-] input: warning: wrong summary datasize (%d bytes) from %s, should be %u bytes.",  recvsize, inet_ntoa(remote.sin_addr), checklength);
+				warning("[-] input: warning: wrong summary datasize (%d bytes) from %s, should be %u bytes.\n",  recvsize, inet_ntoa(remote.sin_addr), checklength);
 				goto unlock;
 			}
 		}
