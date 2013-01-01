@@ -80,7 +80,7 @@ void * thread_input(void *data) {
 		if((recvsize = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *) &remote, &slen)) == -1)
 			perror("recvfrom");
 		
-		debug("[+] input: read %u bytes from %s\n", recvsize, inet_ntoa(remote.sin_addr));
+		verbose("[+] input: read %u bytes from %s\n", recvsize, inet_ntoa(remote.sin_addr));
 		
 		if(recvsize < 0)
 			continue;

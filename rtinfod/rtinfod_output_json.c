@@ -55,8 +55,8 @@ json_t * json_node_network(rtinfo_network_legacy_t *net, uint32_t nbiface) {
 		json_object_set_new(interface, "ip", json_string(strip));
 		json_object_set_new(interface, "rx_data", json_integer(read->current.down));
 		json_object_set_new(interface, "tx_data", json_integer(read->current.up));
-		json_object_set_new(interface, "rx_rate", json_integer(read->up_rate));
-		json_object_set_new(interface, "tx_rate", json_integer(read->down_rate));
+		json_object_set_new(interface, "rx_rate", json_integer(read->down_rate));
+		json_object_set_new(interface, "tx_rate", json_integer(read->up_rate));
 		json_object_set_new(interface, "speed", json_integer(packed_speed_rtinfo(read->speed)));
 		
 		json_array_append_new(array, interface);
@@ -194,6 +194,7 @@ char * output_json() {
 	root = json_object();
 	json_object_set_new(root, "rtinfo", rtinfo);
 	json_object_set_new(root, "version", json_real(SERVER_VERSION));
+	json_object_set_new(root, "servertime", json_integer(time(NULL)));
 	
 	/* Saving json data */
 	output = json_dumps(root, JSON_INDENT(2));
