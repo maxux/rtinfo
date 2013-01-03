@@ -120,7 +120,7 @@ void * thread_output_data(void *thread) {
 	
 	verbose("[+] output: thread %d: started\n", thread_data->sockfd);
 	
-	while((length = recv(thread_data->sockfd, buffer, sizeof(buffer), 0)) > 0) {
+	while((length = recv(thread_data->sockfd, buffer, sizeof(buffer) - 1, 0)) > 0) {
 		if(length < 6)
 			continue;
 			
