@@ -113,6 +113,7 @@ void initconsole() {
 }
 
 void display_perror(char *str) {
+	// perror(str);
 	wattrset(wdebug, A_BOLD | COLOR_PAIR(4));
 	wmove(wdebug, 0, 0);
 	wprintw(wdebug, "[-] %s: %s", str, strerror(errno));
@@ -121,6 +122,7 @@ void display_perror(char *str) {
 }
 
 void display_error(char *str) {
+	// printf("%s\n", str);
 	wattrset(wdebug, A_BOLD | COLOR_PAIR(4));
 	wmove(wdebug, 0, 0);
 	wprintw(wdebug, "[-] %s", str);
@@ -284,7 +286,7 @@ void print_client_summary(client_data_t *client) {
 		
 	} else {
 		wattrset(root_window, A_BOLD | COLOR_PAIR(8));	/* Magenta */
-		wprintw(root_window, "    No swap   ");
+		wprintw(root_window, "    No swap     ");
 	}
 	wattrset(root_window, COLOR_PAIR(1));
 	
@@ -408,10 +410,8 @@ void print_client_network(client_data_t *client) {
 	
 	for(i = 0, j = 0; i < client->ifcount; i++) {
 		/* Hide interfaces without ip and hide loopback interface */
-		/* if((!client->network[i].ip && !client->network[i].speed) || !strncmp(strip, "127.0.0.1", 9)) {
-			client->dspiface--;
-			goto next_read;
-		} */
+		if((!strcmp(client->network[i].ip, "0.0.0.0") || !strcmp(client->network[i].ip, "127.0.0.1")))
+			continue;
 
 		/* Hostname */
 		if(client->lasttime < time(NULL) - 30)

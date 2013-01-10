@@ -139,7 +139,7 @@ client_t * extract_json(char *text) {
 	unsigned int i;
 	client_t *clients;
 	
-	// printf("%s\n", text);
+	// printf("<%s>\n", text);
 	
 	if(!(root = json_loads(text, 0, &error))) {
 		display_error("json errors\n");

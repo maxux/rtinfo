@@ -83,12 +83,12 @@ int main(int argc, char *argv[]) {
 		
 		/* grabbing data */
 		if((json = socket_rtinfo(server, port))) {
-			root = extract_json(json);
+			if((root = extract_json(json))) {
+				print_whole_data(root);
+				client_delete(root);
+			}
+			
 			free(json);
-			
-			print_whole_data(root);
-			
-			client_delete(root);
 		}
 		
 		/* waiting next iteration */
