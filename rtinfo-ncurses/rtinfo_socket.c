@@ -50,10 +50,11 @@ char * working(int sockfd) {
 	
 	/* checking length */
 	if(!(match = strstr(buffer, "Content-length: "))) {
-		display_error("cannot find Content-length\n");
+		display_error("Cannot find Content-length\n");
 		return NULL;
 	}
 
+	/* Alloc is content-length + null */
 	alloc = atol(match + 16) + 1;
 	
 	if(!(match = strstr(buffer, "\r\n\r\n"))) {
@@ -66,15 +67,18 @@ char * working(int sockfd) {
 		return NULL;
 	}
 	
-	missing = snprintf(data, alloc, "%s", match + 4);
+	/* copy current data from buffer */
+	length  = snprintf(data, alloc, "%s", match + 4);	
+	missing = alloc - length;
 
-	/* we have already all */
-	if(alloc != missing + 1) {
+	/* reading missing data */
+	while(strlen(data) != (unsigned int) alloc - 1) {
 		/* ending read */
-		if((length = recv(sockfd, data + missing, alloc - missing, 0)) < 0)
+		if((length = recv(sockfd, data + alloc - missing, missing, 0)) < 0)
 			display_perror("read");
 		
-		data[missing + length] = '\0';
+		data[alloc - missing + length] = '\0';
+		missing -= length;
 	}
 	
 	close(sockfd);
