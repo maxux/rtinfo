@@ -251,5 +251,11 @@ int networkside(char *server, int port) {
 		netinfo_send_packed_net(sockfd, netbuild_cast, netbuild_effective_size, &remote);
 	}
 	
+	rtinfo_free_cpu(cpu);
+	rtinfo_free_network(truenet);
+	
+	free(netbuild);
+	free(packedbuild);
+	
 	return 0;
 }
