@@ -8,6 +8,7 @@
 #include <net/if.h>
 #include <rtinfo.h>
 #include <ctype.h>
+#include <errno.h>
 #include "../rtinfo-common/socket.h"
 #include "byte_conversions.h"
 #include "client_socket.h"
@@ -120,11 +121,20 @@ int networkside(char *server, int port) {
 	packed_cast->options = htobe32(QRY_SOCKET);
 	packed_cast->version = htobe32(CLIENT_VERSION);
 	
-	netinfo_send_packed(sockfd, packed_cast, packedbuild_size, &remote);
-	
 	/* Waiting response from server */
-	if(recv(sockfd, packed_cast, packedbuild_size, 0) == -1)
-		diep("recvfrom");
+	i = 0;
+	
+	do {
+		printf("[+] sending request seq id : %d\n", i++);
+		netinfo_send_packed(sockfd, packed_cast, packedbuild_size, &remote);
+		
+		if(recv(sockfd, packed_cast, packedbuild_size, 0) == -1) {
+			if(errno != EAGAIN)
+				diep("recv");
+				
+		} else errno = 0;
+			
+	} while(errno == EAGAIN);
 	
 	convert_header(packed_cast);
 	
@@ -250,7 +260,7 @@ int networkside(char *server, int port) {
 		/* Sending info_net_t Packet */
 		netinfo_send_packed_net(sockfd, netbuild_cast, netbuild_effective_size, &remote);
 	}
-	
+
 	rtinfo_free_cpu(cpu);
 	rtinfo_free_network(truenet);
 	

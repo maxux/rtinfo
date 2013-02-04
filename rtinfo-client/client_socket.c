@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <rtinfo.h>
+#include <time.h>
 #include "../rtinfo-common/socket.h"
 #include "byte_conversions.h"
 #include "client_socket.h"
@@ -64,6 +65,7 @@ size_t netbuild_assemble(rtinfo_network_legacy_t *read, rtinfo_network_if_t *int
 int netinfo_socket(char *server, int port, struct sockaddr_in *remote) {
 	int sockfd;
 	struct hostent *hent;
+	struct timeval tv = {tv.tv_sec = 2, tv.tv_usec = 0};
 	
 	if((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
 		diep("socket");
@@ -77,6 +79,10 @@ int netinfo_socket(char *server, int port, struct sockaddr_in *remote) {
 		return -1;
 		
 	memcpy(&remote->sin_addr, hent->h_addr_list[0], hent->h_length);
+	
+	/* recv timeout */
+	if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *) &tv, sizeof(tv)))
+		diep("[-] setsockopt: SO_RCVTIMEO");
 	
 	return sockfd;
 }
