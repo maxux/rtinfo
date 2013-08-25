@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Usage: %s server [port]\n", argv[0]);
 		exit(EXIT_FAILURE);
 		
-	} else port = (argc > 2) ? atoi(argv[2]) : INPUT_DEFAULT_PORT;
+	} else port = (argc > 2) ? atoi(argv[2]) : OUTPUT_DEFAULT_PORT;
 	
 	server = argv[1];
 	
