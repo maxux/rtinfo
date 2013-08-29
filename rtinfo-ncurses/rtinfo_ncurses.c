@@ -40,11 +40,8 @@ void dummy(int signal) {
 		break;
 		
 		case SIGWINCH:
-			/* endwin();
-			clear();
-			refresh_whole();
+			endwin();
 			refresh();
-			refresh_whole(); */	/* Second pass required */
 		break;
 	}
 }
