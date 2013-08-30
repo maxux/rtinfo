@@ -22,7 +22,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
-#include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -41,9 +40,46 @@
 #include "rtinfod_input.h"
 #include "rtinfod_debug.h"
 
-void * thread_input(void *data) {
-	struct sockaddr_in si_me, remote;
-	int sockfd, recvsize;
+char *__bind_input[MAX_NETWORK_BIND] = {"0.0.0.0"};
+int __bind_input_count = 1;
+
+void *init_input(void *data) {
+	thread_input_t *root = (thread_input_t *) data;
+	thread_input_t *new[MAX_NETWORK_BIND];
+	int i;
+	
+	for(i = 0; i < __bind_input_count && __bind_input[i]; i++) {
+		if(!(new[i] = (thread_input_t *) malloc(sizeof(thread_input_t))))
+			diep("[-] input: malloc");
+		
+		new[i]->port = root->port;
+		
+		bzero(&new[i]->si_me, sizeof(new[i]->si_me));
+		verbose("[+] input: binding to <%s>\n", __bind_input[i]);
+		
+		new[i]->si_me.sin_family      = AF_INET;
+		new[i]->si_me.sin_port        = htons(root->port);
+		new[i]->si_me.sin_addr.s_addr = inet_addr(__bind_input[i]);
+		
+		if((new[i]->sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+			diep("[-] input: socket");
+		
+		if(bind(new[i]->sockfd, (struct sockaddr*) &new[i]->si_me, sizeof(new[i]->si_me)) == -1)
+			diep("[-] input: bind");
+		
+		if(pthread_create(&new[i]->thread, NULL, thread_input, (void *) new[i]))
+			diep("[-] input: pthread_create");
+	}
+	
+	for(i = 0; i < __bind_input_count && __bind_input[i]; i++)
+		pthread_join(new[i]->thread, NULL);
+	
+	return data;
+}
+
+void *thread_input(void *data) {
+	struct sockaddr_in remote;
+	int recvsize, sockfd;
 	socklen_t slen = sizeof(remote);
 	netinfo_packed_t *packed;
 	netinfo_packed_net_t *net;
@@ -60,22 +96,9 @@ void * thread_input(void *data) {
 	unsigned int *mask = NULL, *baseip = NULL;
 	int nballow = 0, i;
 	
-	/* Creating socket */
-	verbose("[+] input: creating socket\n");		
-	if((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
-		diep("socket");
-
-	bzero(&si_me, sizeof(si_me));
-	
-	si_me.sin_family      = AF_INET;
-	si_me.sin_port        = htons(thread_input->port);
-	si_me.sin_addr.s_addr = htonl(INADDR_ANY);
-	
-	verbose("[+] input: binding socket\n");
-	if(bind(sockfd, (struct sockaddr*) &si_me, sizeof(si_me)) == -1)
-		diep("bind");
-	
 	verbose("[+] input: ready, waiting data\n");
+	sockfd = thread_input->sockfd; // FIXME
+	
 	while(1) {
 		if((recvsize = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *) &remote, &slen)) == -1)
 			perror("recvfrom");
@@ -144,7 +167,9 @@ void * thread_input(void *data) {
 			checklength = sizeof(netinfo_packed_net_t) + (sizeof(rtinfo_network_legacy_t) * net->nbiface) + (net->nbiface * 32);
 			
 			if((size_t) recvsize > checklength) {
-				warning("[-] input: warning: wrong network summary datasize (%d bytes) from %s, should be <= %u bytes.\n",  recvsize, inet_ntoa(remote.sin_addr), checklength);
+				warning("[-] input: warning: wrong network summary datasize (%d bytes) from %s, should be <= %zu bytes.\n",
+					recvsize, inet_ntoa(remote.sin_addr), checklength);
+
 				goto unlock;
 			}
 			
@@ -153,7 +178,9 @@ void * thread_input(void *data) {
 			checklength = sizeof(netinfo_packed_t) + (sizeof(rtinfo_cpu_legacy_t) * be32toh(packed->nbcpu));
 			
 			if((size_t) recvsize != checklength) {
-				warning("[-] input: warning: wrong summary datasize (%d bytes) from %s, should be %u bytes.\n",  recvsize, inet_ntoa(remote.sin_addr), checklength);
+				warning("[-] input: warning: wrong summary datasize (%d bytes) from %s, should be %zu bytes.\n",
+					recvsize, inet_ntoa(remote.sin_addr), checklength);
+
 				goto unlock;
 			}
 		}

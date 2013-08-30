@@ -42,12 +42,14 @@ global_t global = {
 };
 
 static struct option long_options[] = {
-	{"allow",       required_argument, 0, 'a'},
-	{"client-port", required_argument, 0, 'c'},
-	{"remote-port", required_argument, 0, 'r'},
-	{"help",        no_argument,       0, 'h'},
-	{"debug",       no_argument,       0, 'd'},
-	{"verbose",     no_argument,       0, 'v'},
+	{"allow",         required_argument, 0, 'a'},
+	{"client-listen", required_argument, 0, 'l'},
+	{"remote-listen", required_argument, 0, 't'},
+	{"client-port",   required_argument, 0, 'c'},
+	{"remote-port",   required_argument, 0, 'r'},
+	{"help",          no_argument,       0, 'h'},
+	{"debug",         no_argument,       0, 'd'},
+	{"verbose",       no_argument,       0, 'v'},
 	{0, 0, 0, 0}
 };
 
@@ -57,16 +59,20 @@ void diep(char *str) {
 }
 
 void print_usage(char *app) {
-	printf("rtinfo Server (version %f)\n", SERVER_VERSION);
-	printf("%s [-p|--port PORT] [-a|--allow IP/MASK] [-h|--help]\n\n", app);
+	(void) app;
 	
-	printf(" --client-port  specify client (rtinfo-client) listen port\n");
-	printf(" --remote-port  specify remote (http) listen port\n");
-	printf(" --debug        debug messages (very verbose)\n");
-	printf(" --verbose      be a little more verbose\n");
-	printf(" --help         this message\n");
+	printf("rtinfo Server (version %.2f)\n\n", SERVER_VERSION);
 	
-	printf(" --allow        remote ip allowed (not working yet)\n");
+	printf(" --client-listen  specify client (rtinfo-client) listen address\n");
+	printf(" --client-port    specify client (rtinfo-client) listen port\n");
+	printf(" --remote-listen  specify remote (http) listen port\n");
+	printf(" --remote-port    specify remote (http) listen port\n");
+	printf(" --debug          debug messages (very verbose)\n");
+	printf(" --verbose        be a little more verbose\n");
+	printf(" --help           this message\n\n");
+	
+	printf("note: *-listen options can be specified multiple time\n");	
+	// printf(" --allow          remote ip allowed (not working yet)\n");
 	
 	exit(EXIT_FAILURE);
 }
@@ -83,8 +89,7 @@ int main(int argc, char *argv[]) {
 	// unsigned int *mask = NULL, *baseip = NULL;
 	// int nballow = 0;
 	
-	int i;
-	
+	int i;	
 	int option_index = 0;
 	
 	if((int) rtinfo_version() != (int) REQUIRED_LIB_VERSION || rtinfo_version() < REQUIRED_LIB_VERSION) {
@@ -121,6 +126,18 @@ int main(int argc, char *argv[]) {
 			case 'd': global.debug            = 1;            break;
 			case 'v': global.verbose          = 1;            break;
 			
+			// client listen address
+			case 'l':
+				if(__bind_input_count < MAX_NETWORK_BIND)
+					__bind_input[__bind_input_count++ - 1] = strdup(optarg);
+			break;
+			
+			// remote listen address
+			case 't':
+				if(__bind_output_count < MAX_NETWORK_BIND)
+					__bind_output[__bind_output_count++ - 1] = strdup(optarg);
+			break;
+			
 			case 'h':
 				print_usage(argv[0]);
 			break;
@@ -140,11 +157,11 @@ int main(int argc, char *argv[]) {
 	verbose("[+] core: initializing rtinfod version %f\n", SERVER_VERSION);
 	debug("[+] core: starting threads\n");
 		
-	if(pthread_create(&thread_input_data.thread, NULL, thread_input, (void *) &thread_input_data))
-		diep("pthread_create");
+	if(pthread_create(&thread_input_data.thread, NULL, init_input, (void *) &thread_input_data))
+		diep("[-] core: input: pthread_create");
 	
-	if(pthread_create(&thread_output_data.thread, NULL, thread_output, (void *) &thread_output_data))
-		diep("pthread_create");
+	if(pthread_create(&thread_output_data.thread, NULL, init_output, (void *) &thread_output_data))
+		diep("[-] core: output: pthread_create");
 	
 	pthread_join(thread_input_data.thread, NULL);
 	pthread_join(thread_output_data.thread, NULL);

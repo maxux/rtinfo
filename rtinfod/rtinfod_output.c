@@ -45,7 +45,8 @@
 #include "rtinfod_output.h"
 #include "rtinfod_output_json.h"
 
-#define LISTEN_ADDR	"0.0.0.0"
+char *__bind_output[64] = {"0.0.0.0"};
+int __bind_output_count = 1;
 
 typedef struct thread_data_t {
 	int sockfd;
@@ -59,38 +60,59 @@ char *httpheader = "HTTP/1.0 200 OK\r\n" \
                    "Content-type: application/json\r\n" \
                    "Content-length: %d\r\n\r\n";
 
-void * thread_output(void *data) {
-	int sockfd, new_fd;
-	struct sockaddr_in addr_listen, addr_client;
+void *init_output(void *data) {
+	thread_output_t *root = (thread_output_t *) data;;
+	thread_output_t *new[MAX_NETWORK_BIND];
+	int i;
+	
+	for(i = 0; i < __bind_output_count && __bind_output[i]; i++) {
+		if(!(new[i] = (thread_output_t *) malloc(sizeof(thread_output_t))))
+			diep("[-] input: malloc");
+		
+		new[i]->port = root->port;
+		
+		verbose("[+] output: binding to <%s>\n", __bind_output[i]);
+		
+		new[i]->addr_listen.sin_family = AF_INET;
+		new[i]->addr_listen.sin_port   = htons(root->port);		
+		
+		if((new[i]->sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+			diep("[-] output: socket");
+
+		if(setsockopt(new[i]->sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
+			diep("[-] output: setsockopt");
+		
+		new[i]->addr_listen.sin_addr.s_addr = inet_addr(__bind_output[i]);
+		
+		if(bind(new[i]->sockfd, (struct sockaddr*) &new[i]->addr_listen, sizeof(new[i]->addr_listen)) == -1)
+			diep("[-] output: bind");
+		
+		if(listen(new[i]->sockfd, 32) == -1)
+			diep("[-] output: listen");
+		
+		if(pthread_create(&new[i]->thread, NULL, thread_output, (void *) new[i]))
+			diep("pthread_create");
+	}
+	
+	for(i = 0; i < __bind_output_count && __bind_output[i]; i++)
+		pthread_join(new[i]->thread, NULL);
+	
+	return data;
+}
+
+void *thread_output(void *data) {
+	int new_fd;
+	struct sockaddr_in addr_client;
 	socklen_t addr_client_len;
 	char *client_ip;
 	thread_data_t *thread_data;
 	thread_output_t *thread_output = (thread_output_t*) data;
 
-	/* Creating Server Socket */
-	addr_listen.sin_family      = AF_INET;
-	addr_listen.sin_port        = htons(thread_output->port);
-	addr_listen.sin_addr.s_addr = inet_addr(LISTEN_ADDR);
-	
-	/* Init Client Socket Length */
+	verbose("[+] output: ready, waiting data\n");
 	addr_client_len = sizeof(addr_client);
 	
-	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-		diep("[-] output: socket");
-
-	if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
-		diep("[-] output: setsockopt");
-
-	if(bind(sockfd, (struct sockaddr*) &addr_listen, sizeof(addr_listen)) == -1)
-		diep("[-] output: bind");
-
-	if(listen(sockfd, 32) == -1)
-		diep("[-] output: listen");
-
-	verbose("[+] output: ready, waiting data\n");
-	
 	while(1) {
-		if((new_fd = accept(sockfd, (struct sockaddr *)&addr_client, &addr_client_len)) == -1)
+		if((new_fd = accept(thread_output->sockfd, (struct sockaddr *)&addr_client, &addr_client_len)) == -1)
 			perror("[-] output: accept");
 
 		client_ip = inet_ntoa(addr_client.sin_addr);
@@ -113,7 +135,7 @@ void * thread_output(void *data) {
 	return data;
 }
 
-void * thread_output_data(void *thread) {
+void *thread_output_data(void *thread) {
 	thread_data_t *thread_data = (thread_data_t*) thread;
 	char buffer[2048], *json;
 	int length;

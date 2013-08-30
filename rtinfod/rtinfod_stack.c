@@ -29,7 +29,7 @@
 #include "rtinfod_stack.h"
 #include "../rtinfo-common/socket.h"
 
-client_t * stack_client(client_t *new) {
+client_t *stack_client(client_t *new) {
 	new->next = global.clients;
 	global.clients = new;
 	
@@ -54,7 +54,7 @@ client_t * unstack_client(client_t *remove) {
 	return clients; */
 }
 
-client_t * stack_search(char *name) {
+client_t *stack_search(char *name) {
 	client_t *temp;
 	
 	temp = global.clients;
@@ -64,7 +64,7 @@ client_t * stack_search(char *name) {
 	return temp;
 }
 
-client_t * stack_newclient(char *hostname, uint32_t remoteip) {
+client_t *stack_newclient(char *hostname, uint32_t remoteip) {
 	client_t *client;
 	
 	if(!(client = (client_t*) malloc(sizeof(client_t))))

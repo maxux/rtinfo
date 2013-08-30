@@ -28,6 +28,7 @@
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <ctype.h>
+#include <inttypes.h>
 #include "rtinfod.h"
 #include "../rtinfo-common/socket.h"
 #include "rtinfod_input.h"
@@ -104,12 +105,19 @@ void debug_input(unsigned char *buffer, unsigned int recvsize) {
 			ifname[read->name_length] = '\0';
 			
 			printf("[ ] Name : %s [%s]\n", read->name, strip);
-			printf("[ ] Rate : %llu / %llu\n", be64toh(read->up_rate), be64toh(read->down_rate));
-			printf("[ ] Data : %llu / %llu\n", be64toh(read->current.up), be64toh(read->current.down));
 			printf("[ ] Speed: %u\n\n", packed_speed_rtinfo(read->speed));
 			
+			printf("[ ] Rate : %" PRIu64 " / %" PRIu64 "\n",
+				be64toh(read->up_rate), be64toh(read->down_rate));
+				
+			printf("[ ] Data : %" PRIu64 " / %" PRIu64 "\n",
+				be64toh(read->current.up), be64toh(read->current.down));
+				
 			next_read:
-			read = (rtinfo_network_legacy_t*) ((char*) read + sizeof(rtinfo_network_legacy_t) + read->name_length);
+				read = (rtinfo_network_legacy_t*) (
+					((char*) read) + read->name_length +
+					sizeof(rtinfo_network_legacy_t)
+				);
 		}
 		
 	} else {
@@ -121,13 +129,30 @@ void debug_input(unsigned char *buffer, unsigned int recvsize) {
 			printf("[ ] CPU % 6d : %d\n", i, cast->cpu[i].usage);
 		
 		
-		printf("[ ] Memory RAM : %llu / %llu\n", be64toh(cast->memory.ram_used), be64toh(cast->memory.ram_total));
-		printf("[ ] Memory SWAP: %llu / %llu\n", be64toh(cast->memory.swap_free), be64toh(cast->memory.swap_total));
-		printf("[ ] Load Avg.  : %.2f / %.2f / %.2f\n", ((float) be32toh(cast->loadavg[0]) / 100), ((float) be32toh(cast->loadavg[1]) / 100), ((float) be32toh(cast->loadavg[2]) / 100));
-		printf("[ ] Battery    : %u / %u / %u / %llu\n", be32toh(cast->battery.charge_full), be32toh(cast->battery.charge_now), cast->battery.load, be64toh(cast->battery.status));
+		printf("[ ] Memory RAM : %" PRIu64 " / %" PRIu64 "\n",
+			be64toh(cast->memory.ram_used), be64toh(cast->memory.ram_total));
+			
+		printf("[ ] Memory SWAP: %" PRIu64 " / %" PRIu64 "\n",
+			be64toh(cast->memory.swap_free), be64toh(cast->memory.swap_total));
+			
+		printf("[ ] Load Avg.  : %.2f / %.2f / %.2f\n",
+			((float) be32toh(cast->loadavg[0]) / 100),
+			((float) be32toh(cast->loadavg[1]) / 100),
+			((float) be32toh(cast->loadavg[2]) / 100));
+			
+		printf("[ ] Battery    : %u / %u / %u / %" PRIu64 "\n",
+			be32toh(cast->battery.charge_full),
+			be32toh(cast->battery.charge_now),
+			cast->battery.load,
+			be64toh(cast->battery.status));
 		
-		printf("[ ] CPU Temp   : %hu / %hu\n", be16toh(cast->temp_cpu.cpu_average), be16toh(cast->temp_cpu.critical));
-		printf("[ ] HDD Temp   : %hu / %hu\n", be16toh(cast->temp_hdd.hdd_average), be16toh(cast->temp_hdd.peak));
+		printf("[ ] CPU Temp   : %hu / %hu\n",
+			be16toh(cast->temp_cpu.cpu_average),
+			be16toh(cast->temp_cpu.critical));
+			
+		printf("[ ] HDD Temp   : %hu / %hu\n", 
+			be16toh(cast->temp_hdd.hdd_average),
+			be16toh(cast->temp_hdd.peak));
 		
 		printf("[ ] Uptime     : %u\n", be32toh(cast->uptime.uptime));
 		printf("[ ] Timestamp  : %u\n\n", be32toh(cast->timestamp));

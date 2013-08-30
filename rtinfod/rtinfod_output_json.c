@@ -32,7 +32,7 @@
 
 char *__avgvalue[] = {"1", "5", "15"};
 
-json_t * json_node_network(rtinfo_network_legacy_t *net, uint32_t nbiface) {
+static json_t *json_node_network(rtinfo_network_legacy_t *net, uint32_t nbiface) {
 	rtinfo_network_legacy_t *read = net;
 	char strip[16], ifname[64];
 	json_t *array, *interface;
@@ -67,7 +67,7 @@ json_t * json_node_network(rtinfo_network_legacy_t *net, uint32_t nbiface) {
 	return array;
 }
 
-json_t * json_node_loadavg(uint32_t *loadavg) {
+static json_t *json_node_loadavg(uint32_t *loadavg) {
 	unsigned int i;
 	json_t *array;
 	
@@ -79,7 +79,7 @@ json_t * json_node_loadavg(uint32_t *loadavg) {
 	return array;
 }
 
-json_t * json_node_cpu(rtinfo_cpu_legacy_t *cpu, uint32_t nbcpu) {
+static json_t *json_node_cpu(rtinfo_cpu_legacy_t *cpu, uint32_t nbcpu) {
 	uint32_t i;
 	json_t *array;
 	
@@ -91,7 +91,7 @@ json_t * json_node_cpu(rtinfo_cpu_legacy_t *cpu, uint32_t nbcpu) {
 	return array;
 }
 
-json_t * json_node_temp_cpu(rtinfo_temp_cpu_t *temp) {
+static json_t *json_node_temp_cpu(rtinfo_temp_cpu_t *temp) {
 	json_t *node;
 	
 	node = json_object();
@@ -101,7 +101,7 @@ json_t * json_node_temp_cpu(rtinfo_temp_cpu_t *temp) {
 	return node;
 }
 
-json_t * json_node_temp_hdd(rtinfo_temp_hdd_t *temp) {
+static json_t *json_node_temp_hdd(rtinfo_temp_hdd_t *temp) {
 	json_t *node;
 	
 	node = json_object();
@@ -111,7 +111,7 @@ json_t * json_node_temp_hdd(rtinfo_temp_hdd_t *temp) {
 	return node;
 }
 
-json_t * json_node_memory(rtinfo_memory_t *memory) {
+static json_t *json_node_memory(rtinfo_memory_t *memory) {
 	json_t *node;
 	
 	node = json_object();
@@ -123,7 +123,7 @@ json_t * json_node_memory(rtinfo_memory_t *memory) {
 	return node;
 }
 
-json_t * json_node_battery(rtinfo_battery_t *battery) {
+static json_t *json_node_battery(rtinfo_battery_t *battery) {
 	json_t *node;
 	
 	node = json_object();
@@ -136,7 +136,7 @@ json_t * json_node_battery(rtinfo_battery_t *battery) {
 }
 
 /* Main JSON convertion */
-char * output_json() {
+char *output_json() {
 	client_t *client;
 	json_t *root, *rtinfo, *this;
 	char strip[16], *output;
