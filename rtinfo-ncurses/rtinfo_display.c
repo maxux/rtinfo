@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <ncurses.h>
 #include <jansson.h>
+#include <locale.h>
 #include <time.h>
 #include <errno.h>
 #include "rtinfo_ncurses.h"
@@ -71,6 +72,11 @@ int battery_limit[] = {
 
 char battery_picto[] = "=+-?!";
 
+int network_skip = 0;
+int network_skpped = 0;
+int network_displayed = 0;
+int network_maxdisplay = 0;
+
 #define RATE_COLD	(A_BOLD | COLOR_PAIR(5))
 #define RATE_ACTIVE	(A_BOLD | COLOR_PAIR(8))
 #define RATE_LOW	(A_BOLD | COLOR_PAIR(6))
@@ -92,6 +98,8 @@ void initconsole() {
 	curs_set(0);		/* Disable cursor */
 	keypad(stdscr, TRUE);
 	scrollok(stdscr, 1);
+	timeout(1000);
+	setlocale(LC_CTYPE, "");
 	
 	getmaxyx(stdscr, __maxy, __maxx);
 	
@@ -408,9 +416,18 @@ void print_client_summary(client_data_t *client) {
 void print_client_network(client_data_t *client) {
 	size_t i, j;
 	
-	for(i = 0, j = 0; i < client->ifcount; i++) {
+	for(i = 0, j = 0; i < client->ifcount; i++) {		
 		/* Hide interfaces without ip and hide loopback interface */
 		if((!strcmp(client->network[i].ip, "0.0.0.0") || !strcmp(client->network[i].ip, "127.0.0.1")))
+			continue;
+		
+		/* Network scroll */
+		if(network_skpped < network_skip) {
+			network_skpped++;
+			continue;
+		}
+		
+		if(network_displayed >= network_maxdisplay)
 			continue;
 
 		/* Hostname */
@@ -486,12 +503,19 @@ void print_client_network(client_data_t *client) {
 		/* Print Speed */
 		if(!client->network[i].speed) {
 			wattrset(root_window, RATE_COLD);
-			wprintw(root_window, " Unknown\n");
+			wprintw(root_window, " Unknown");
 			
-		} else wprintw(root_window, " %d Mbps\n", client->network[i].speed);
+		} else wprintw(root_window, " %d Mbps", client->network[i].speed);
 		
+		/* Notify that scroll is enabled */
+		if(network_displayed + 1 == network_maxdisplay)
+			waddstr(root_window, " (scroll v)");
+		
+		wprintw(root_window, "\n");
 		wclrtoeol(root_window);
+		
 		j++;
+		network_displayed++;
 	}
 	
 	/* nothing displayed */
@@ -524,9 +548,20 @@ void print_whole_data(client_t *root) {
 	split(root_window);
 	build_netheader(root_window);
 	
+	network_skpped = 0;
+	network_displayed = 0;
+	
+	/* console height minus error minus headers minus summary */
+	network_maxdisplay = (__maxy - 1) - 1 - 4 - root->count;
+	
 	for(i = 0; i < root->count; i++) {
 		print_client_network(&root->clients[i]);
-		split(root_window);
+		
+		/* serparation line */
+		if(network_displayed < network_maxdisplay) {
+			split(root_window);
+			network_displayed++;
+		}
 	}
 	
 	erase_anythingelse(root_window);

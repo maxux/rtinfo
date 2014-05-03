@@ -32,6 +32,8 @@
 #include "rtinfo_display.h"
 #include "rtinfo_socket.h"
 
+extern int network_skip;
+
 void dummy(int signal) {
 	switch(signal) {
 		case SIGINT:
@@ -55,7 +57,7 @@ void print_usage(char *app) {
 
 int main(int argc, char *argv[]) {
 	char *server, *json;
-	int port;
+	int port, key;
 	client_t *root;
 	
 	/* Checking arguments */
@@ -88,8 +90,15 @@ int main(int argc, char *argv[]) {
 			free(json);
 		}
 		
-		/* waiting next iteration */
-		usleep(1000000);
+		/* waiting next iteration with user input for scroll */
+		/* timeout is set to 1 second */
+		if((key = getch()) != ERR) {
+			if(key == KEY_UP && network_skip > 0)
+				network_skip--;
+			
+			else if(key == KEY_DOWN)
+				network_skip++;
+		}
 	}
 
 	endwin();
