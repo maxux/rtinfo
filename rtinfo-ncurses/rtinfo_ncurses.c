@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
 				break;
 				
 			case 'p':
-				port = atoi(argv[2]);
+				port = atoi(optarg);
 				break;
 				
 			case 'b':
