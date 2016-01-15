@@ -21,27 +21,79 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <rtinfo.h>
+#include <string.h>
+#include <getopt.h>
 #include "rtinfo_client.h"
 #include "client_network.h"
+
+static struct option long_options[] = {
+	{"host",     required_argument, 0, 'h'},
+	{"port",     required_argument, 0, 'p'},
+	{"interval", required_argument, 0, 'i'},
+	{0, 0, 0, 0}
+};
 
 void diep(char *str) {
 	perror(str);
 	exit(EXIT_FAILURE);
 }
 
+void print_usage(char *app) {
+	(void) app;
+	
+	printf("rtinfo-client (v%.3f) command line", CLIENT_VERSION);
+	
+	printf(" --host <host>      specify remote daemon host (default: %s)\n", DEFAULT_HOST);
+	printf(" --port <port>      specify remote daemon port (default: %d)\n", DEFAULT_PORT);
+	printf(" --interval <msec>  interval between two measure (default is 1000 (1s))\n");
+	
+	exit(EXIT_FAILURE);
+}
+
 int main(int argc, char *argv[]) {
-	int port;
+	int i, option_index = 0;
+	
+	char *server = "localhost";
+	int port = DEFAULT_PORT;
+	int interval = 1000;
 	
 	if((int) rtinfo_version() != 4 || rtinfo_version() < 4.00) {
 		fprintf(stderr, "[-] Require librtinfo 4 (>= 4.00)\n");
 		return 1;
 	}
 	
-	if(argc < 2) {
-		fprintf(stderr, "Usage: %s server [port]\n", argv[0]);
-		exit(EXIT_FAILURE);
-		
-	} else port = (argc > 2) ? atoi(argv[2]) : DEFAULT_PORT;
+	/* Checking arguments */
+	while(1) {
+		i = getopt_long(argc, argv, "h:p:i:", long_options, &option_index);
+
+		/* Detect the end of the options. */
+		if(i == -1)
+			break;
+
+		switch(i) {
+			case 'h':
+				server = strdup(optarg);
+				break;
+				
+			case 'p':
+				port = atoi(optarg);
+				break;
+				
+			case 'i':
+				interval = atoi(optarg);
+				break;
+
+			/* unrecognized option */
+			case '?':
+				print_usage(argv[0]);
+				return 1;
+			break;
+
+			/* error */
+			default:
+				abort();
+		}
+	}
 	
-	return networkside(argv[1], port);
+	return networkside(server, port, interval);
 }

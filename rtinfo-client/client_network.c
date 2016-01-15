@@ -46,7 +46,7 @@ void dump(unsigned char *data, unsigned int len) {
 	}
 }
 
-int networkside(char *server, int port) {
+int networkside(char *server, int port, int interval) {
 	netinfo_packed_t *packed_cast;
 	char *packedbuild;
 	short packedbuild_size;
@@ -72,9 +72,9 @@ int networkside(char *server, int port) {
 	printf("[+] Starting rtinfo network client (version %.3f)\n", CLIENT_VERSION);
 	printf("[ ] librtinfo version      : %.2f\n", rtinfo_version());
 	
-	printf("[ ] netinfo_packed_t       : %u bytes\n", sizeof(netinfo_packed_t));
-	printf("[ ] netinfo_packed_net_t   : %u bytes\n", sizeof(netinfo_packed_net_t));
-	printf("[ ] rtinfo_network_legacy_t: %u bytes\n", sizeof(rtinfo_network_legacy_t));
+	printf("[ ] netinfo_packed_t       : %lu bytes\n", sizeof(netinfo_packed_t));
+	printf("[ ] netinfo_packed_net_t   : %lu bytes\n", sizeof(netinfo_packed_net_t));
+	printf("[ ] rtinfo_network_legacy_t: %lu bytes\n", sizeof(rtinfo_network_legacy_t));
 	
 	/*
 	 * Initializing Network
@@ -166,7 +166,7 @@ int networkside(char *server, int port) {
 	/* Working */
 	while(1) {
 		/* Sleeping */
-		usleep(UPDATE_INTERVAL);
+		usleep(interval * 1000);
 
 		/* Reading CPU */
 		rtinfo_get_cpu(cpu);
@@ -177,7 +177,7 @@ int networkside(char *server, int port) {
 		
 		/* Reading Network */
 		rtinfo_get_network(truenet);
-		rtinfo_mk_network_usage(truenet, UPDATE_INTERVAL / 1000);
+		rtinfo_mk_network_usage(truenet, interval);
 		
 		if(!rtinfo_get_memory(&packed_cast->memory))
 			return 1;
