@@ -223,6 +223,7 @@ void print_client_summary(client_data_t *client) {
 	int i;
 	float memory_percent, swap_percent;
 	struct tm * timeinfo;
+	char buffer[64];
 	
 	if(client->lasttime < time(NULL) - 30)
 		wattrset(root_window, A_BOLD | COLOR_PAIR(4));
@@ -232,7 +233,8 @@ void print_client_summary(client_data_t *client) {
 		
 	else wattrset(root_window, A_BOLD | COLOR_PAIR(7));
 	
-	wprintw(root_window, " %-14s ", client->hostname);
+	snprintf(buffer, 15, "%s", client->hostname);
+	wprintw(root_window, " %-14s ", buffer);
 	
 	/* Print CPU Usage */
 	separe(root_window);
@@ -415,6 +417,7 @@ void print_client_summary(client_data_t *client) {
 
 void print_client_network(client_data_t *client) {
 	size_t i, j;
+	char buffer[64];
 	
 	for(i = 0, j = 0; i < client->ifcount; i++) {		
 		/* Hide interfaces without ip and hide loopback interface */
@@ -439,7 +442,9 @@ void print_client_network(client_data_t *client) {
 			
 		else wattrset(root_window, A_BOLD | COLOR_PAIR(7));
 	
-		wprintw(root_window, " %-14s ", client->hostname);
+		snprintf(buffer, 15, "%s", client->hostname);
+		wprintw(root_window, " %-14s ", buffer);
+	
 		separe(root_window);
 		
 		/* Interface */
