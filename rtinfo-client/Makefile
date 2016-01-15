@@ -3,6 +3,10 @@ include config.mk
 SRC=$(wildcard *.c)
 OBJ=$(SRC:.c=.o)
 
+ifdef STATIC
+	LDFLAGS += -static
+endif
+
 ifdef SystemRoot
 	# Windows
 	RM   = del /Q
