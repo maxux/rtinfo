@@ -251,7 +251,7 @@ void print_client_summary(client_data_t *client) {
 		
 	else wattrset(root_window, LEVEL_COLD);
 	
-	wprintw(root_window, " %3d%%/ % 2d ", client->summary.cpu_usage, client->summary.cpu_count);
+	wprintw(root_window, " %3d%%/% 3d ", client->summary.cpu_usage, client->summary.cpu_count);
 	wattrset(root_window, COLOR_PAIR(1));
 	
 	
