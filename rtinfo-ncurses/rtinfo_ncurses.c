@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <getopt.h>
 #include <ncurses.h>
 #include <signal.h>
 #include <rtinfo.h>
@@ -32,6 +33,15 @@
 #include "rtinfo_display.h"
 #include "rtinfo_socket.h"
 #include "rtinfo_units.h"
+
+#define OUTPUT_DEFAULT_HOST     "localhost"
+
+static struct option long_options[] = {
+	{"host", required_argument, 0, 'h'},
+	{"port", required_argument, 0, 'p'},
+	{"bits", no_argument,       0, 'b'},
+	{0, 0, 0, 0}
+};
 
 extern int network_skip;
 
@@ -50,27 +60,59 @@ void dummy(int signal) {
 }
 
 void print_usage(char *app) {
+	(void) app;
+	
 	printf("rtinfo-ncurses (version %.3f)\n", VERSION);
-	printf("%s server [port]\n", app);
+	
+	printf(" --host <host>   specify remote daemon host (default: %s)\n", OUTPUT_DEFAULT_HOST);
+	printf(" --port <port>   specify remote daemon port (default: %d)\n", OUTPUT_DEFAULT_PORT);
+	printf(" --bits          use bits for network units (default are bytes)\n");
 	
 	exit(EXIT_FAILURE);
 }
 
 int main(int argc, char *argv[]) {
-	char *server, *json;
-	int port, key, units;
+	char *json;
+	int key;
 	client_t *root;
+	int i, option_index = 0;
+	
+	char *server = OUTPUT_DEFAULT_HOST;
+	int port = OUTPUT_DEFAULT_PORT;
+	int units = UNITS_BYTES;
 	
 	/* Checking arguments */
-	if(argc < 2) {
-		fprintf(stderr, "Usage: %s server [port]\n", argv[0]);
-		exit(EXIT_FAILURE);
-		
-	} else port = (argc > 2) ? atoi(argv[2]) : OUTPUT_DEFAULT_PORT;
-	
-	server = argv[1];
-	
-	units = UNITS_BYTES;
+	while(1) {
+		i = getopt_long(argc, argv, "h:pb", long_options, &option_index);
+
+		/* Detect the end of the options. */
+		if(i == -1)
+			break;
+
+		switch(i) {
+			case 'h':
+				server = strdup(optarg);
+				break;
+				
+			case 'p':
+				port = atoi(argv[2]);
+				break;
+				
+			case 'b':
+				units = UNITS_BITS;
+				break;
+
+			/* unrecognized option */
+			case '?':
+				print_usage(argv[0]);
+				return 1;
+			break;
+
+			/* error */
+			default:
+				abort();
+		}
+	}
 	
 	/* Handling Resize Signal */
 	signal(SIGINT, dummy);
