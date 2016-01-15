@@ -18,36 +18,50 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "rtinfo_units.h"
 
-char *units[] = {"Ko", "Mo", "Go", "To"};
+char *units_bytes[] = {"kB", "MB", "GB", "TB"};
+char *units_bits[] = {"kb", "Mb", "Gb", "Tb"};
+
 char *uptime_units[] = {"m", "h", "d"};
 
-double sizeroundd(long long size) {
+double sizefix(double value, int type) {
+	if(type == UNITS_BITS)	
+		return value * 8;
+	
+	return value;
+}
+
+double sizeroundd(long long size, int type) {
 	unsigned int i;
 	double result = size;
 	
-	for(i = 0; i < (sizeof(units) / 2) - 1; i++) {
+	for(i = 0; i < (sizeof(units_bytes) / 2) - 1; i++) {
 		if(result / 1024 < 1023)
-			return result / 1024;
+			return sizefix(result / 1024, type);
 			
 		else result /= 1024;
 	}
 	
-	return result;
+	return sizefix(result, type);
 }
 
-char * unitround(long long size) {
+char * unitround(long long size, int type) {
 	unsigned int i;
-	double result = size / 1024;	/* First unit is Ko */
+	double result = size / 1024;	/* First unit is k */
 	
-	for(i = 0; i < sizeof(units) / sizeof(units[0]); i++) {
+	for(i = 0; i < sizeof(units_bytes) / sizeof(units_bytes[0]); i++) {
 		if(result < 1023)
 			break;
 			
 		result /= 1024;
 	}
 	
-	return units[i];
+	if(type == UNITS_BITS)
+		return units_bits[i];
+	
+	// fallback
+	return units_bytes[i];
 }
 
 int uptime_value(time_t uptime) {

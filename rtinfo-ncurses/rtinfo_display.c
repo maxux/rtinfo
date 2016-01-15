@@ -270,7 +270,7 @@ void print_client_summary(client_data_t *client) {
 	
 	else wattrset(root_window, LEVEL_COLD);
 	
-	wprintw(root_window, "%6lld Mo (%2.0f%%) ", client->summary.ram_used / 1024, memory_percent);
+	wprintw(root_window, "%6lld %s (%2.0f%%) ", client->summary.ram_used / 1024, units_bytes[1], memory_percent);
 	wattrset(root_window, COLOR_PAIR(1));
 	
 	separe(root_window);
@@ -292,7 +292,7 @@ void print_client_summary(client_data_t *client) {
 		if(swap_percent == 100)
 			swap_percent = 99;
 			
-		wprintw(root_window, "%6lld Mo (%2.0f%%) ", (client->summary.swap_total - client->summary.swap_free) / 1024, swap_percent);
+		wprintw(root_window, "%6lld %s (%2.0f%%) ", (client->summary.swap_total - client->summary.swap_free) / 1024, units_bytes[1], swap_percent);
 		
 	} else {
 		wattrset(root_window, A_BOLD | COLOR_PAIR(8));	/* Magenta */
@@ -415,9 +415,11 @@ void print_client_summary(client_data_t *client) {
 	wprintw(root_window, "\n");
 }
 
-void print_client_network(client_data_t *client) {
+void print_client_network(client_data_t *client, int units) {
 	size_t i, j;
 	char buffer[64];
+	
+	unsigned long long rxr, txr, rxd, txd;
 	
 	for(i = 0, j = 0; i < client->ifcount; i++) {		
 		/* Hide interfaces without ip and hide loopback interface */
@@ -466,11 +468,16 @@ void print_client_network(client_data_t *client) {
 		
 		else wattrset(root_window, RATE_COLD);
 		
-		wprintw(root_window, " % 15.2f %s/s ", sizeroundd(client->network[i].rx_rate), unitround(client->network[i].rx_rate));
+		rxr = client->network[i].rx_rate;
+		txr = client->network[i].tx_rate;
+		rxd = client->network[i].rx_data;
+		txd = client->network[i].tx_data;
+		
+		wprintw(root_window, " % 15.2f %s/s ", sizeroundd(rxr, units), unitround(rxr, units));
 		separe(root_window);
 		
 		wattrset(root_window, COLOR_PAIR(1));
-		wprintw(root_window, "% 11.2f %s ", sizeroundd(client->network[i].rx_data), unitround(client->network[i].rx_data));
+		wprintw(root_window, "% 11.2f %s ", sizeroundd(rxd, units), unitround(rxd, units));
 		
 		separe(root_window);
 		if(client->network[i].tx_rate > rate_limit[3])
@@ -487,11 +494,11 @@ void print_client_network(client_data_t *client) {
 		
 		else wattrset(root_window, RATE_COLD);
 		
-		wprintw(root_window, " % 15.2f %s/s ", sizeroundd(client->network[i].tx_rate), unitround(client->network[i].tx_rate));
+		wprintw(root_window, " % 15.2f %s/s ", sizeroundd(txr, units), unitround(txr, units));
 		separe(root_window);
 		
 		wattrset(root_window, COLOR_PAIR(1));
-		wprintw(root_window, "% 9.2f %s ", sizeroundd(client->network[i].tx_data), unitround(client->network[i].tx_data));
+		wprintw(root_window, "% 9.2f %s ", sizeroundd(txd, units), unitround(txd, units));
 		
 		/* Print IP */
 		separe(root_window);
@@ -541,7 +548,7 @@ void print_client_network(client_data_t *client) {
 	}
 }
 
-void print_whole_data(client_t *root) {
+void print_whole_data(client_t *root, int units) {
 	unsigned int i;
 	wmove(root_window, 0, 0);
 	
@@ -560,7 +567,7 @@ void print_whole_data(client_t *root) {
 	network_maxdisplay = (__maxy - 1) - 1 - 4 - root->count;
 	
 	for(i = 0; i < root->count; i++) {
-		print_client_network(&root->clients[i]);
+		print_client_network(&root->clients[i], units);
 		
 		/* serparation line */
 		if(network_displayed < network_maxdisplay) {

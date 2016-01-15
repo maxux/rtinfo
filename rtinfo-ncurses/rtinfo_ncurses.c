@@ -31,6 +31,7 @@
 #include "rtinfo_extract_json.h"
 #include "rtinfo_display.h"
 #include "rtinfo_socket.h"
+#include "rtinfo_units.h"
 
 extern int network_skip;
 
@@ -57,7 +58,7 @@ void print_usage(char *app) {
 
 int main(int argc, char *argv[]) {
 	char *server, *json;
-	int port, key;
+	int port, key, units;
 	client_t *root;
 	
 	/* Checking arguments */
@@ -68,6 +69,8 @@ int main(int argc, char *argv[]) {
 	} else port = (argc > 2) ? atoi(argv[2]) : OUTPUT_DEFAULT_PORT;
 	
 	server = argv[1];
+	
+	units = UNITS_BYTES;
 	
 	/* Handling Resize Signal */
 	signal(SIGINT, dummy);
@@ -83,7 +86,7 @@ int main(int argc, char *argv[]) {
 		/* grabbing data */
 		if((json = socket_rtinfo(server, port))) {
 			if((root = extract_json(json))) {
-				print_whole_data(root);
+				print_whole_data(root, units);
 				client_delete(root);
 			}
 			
