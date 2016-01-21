@@ -23,6 +23,9 @@
 #include <rtinfo.h>
 #include <string.h>
 #include <getopt.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include "rtinfo_client.h"
 #include "client_network.h"
 
@@ -30,6 +33,7 @@ static struct option long_options[] = {
 	{"host",     required_argument, 0, 'h'},
 	{"port",     required_argument, 0, 'p'},
 	{"interval", required_argument, 0, 'i'},
+	{"daemon",   no_argument,       0, 'd'},
 	{0, 0, 0, 0}
 };
 
@@ -46,6 +50,7 @@ void print_usage(char *app) {
 	printf(" --host <host>      specify remote daemon host (default: %s)\n", DEFAULT_HOST);
 	printf(" --port <port>      specify remote daemon port (default: %d)\n", DEFAULT_PORT);
 	printf(" --interval <msec>  interval between two measure (default is 1000 (1s))\n");
+	printf(" --daemon           run the client in background\n");
 	
 	exit(EXIT_FAILURE);
 }
@@ -57,6 +62,9 @@ int main(int argc, char *argv[]) {
 	int port = DEFAULT_PORT;
 	int interval = 1000;
 	
+	int daemon = 0;
+	pid_t process = 0;
+	
 	if((int) rtinfo_version() != 4 || rtinfo_version() < 4.00) {
 		fprintf(stderr, "[-] Require librtinfo 4 (>= 4.00)\n");
 		return 1;
@@ -64,7 +72,7 @@ int main(int argc, char *argv[]) {
 	
 	/* Checking arguments */
 	while(1) {
-		i = getopt_long(argc, argv, "h:p:i:", long_options, &option_index);
+		i = getopt_long(argc, argv, "h:p:i:d", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if(i == -1)
@@ -82,6 +90,10 @@ int main(int argc, char *argv[]) {
 			case 'i':
 				interval = atoi(optarg);
 				break;
+			
+			case 'd':
+				daemon = 1;
+				break;
 
 			/* unrecognized option */
 			case '?':
@@ -93,6 +105,20 @@ int main(int argc, char *argv[]) {
 			default:
 				abort();
 		}
+	}
+	
+	if(daemon) {
+		// cannot fork
+		if((process = fork()) < 0)
+			diep("[-] fork");
+		
+		// closing parent
+		if(process)
+			return 0;
+		
+		close(STDIN_FILENO);
+		close(STDOUT_FILENO);
+		close(STDERR_FILENO);
 	}
 	
 	return networkside(server, port, interval);
