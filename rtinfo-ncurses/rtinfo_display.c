@@ -382,7 +382,10 @@ void print_client_summary(client_data_t *client) {
 		
 		wprintw(root_window, "% 3d", client->summary.sensors_cpu_avg);
 		
-	} else wprintw(root_window, "    ");
+	} else {
+		wattrset(root_window, LEVEL_COLD);
+		wprintw(root_window, " .. ");
+	}
 	
 	wattrset(root_window, LEVEL_COLD);
 	wprintw(root_window, " / ");
@@ -410,7 +413,10 @@ void print_client_summary(client_data_t *client) {
 		
 		wprintw(root_window, "(%d) ", client->summary.sensors_hdd_peak);
 		
-	} else wprintw(root_window, "       ");
+	} else {
+		wattrset(root_window, LEVEL_COLD);
+		wprintw(root_window, " ... (..) ");
+	}
 	
 	separe(root_window);
 	
