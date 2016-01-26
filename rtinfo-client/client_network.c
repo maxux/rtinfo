@@ -58,6 +58,11 @@ int networkside(char *server, int port, int interval) {
 	rtinfo_network_t *truenet;
 	short legacy_size;
 	
+	rtinfo_disk_t *truedisk;
+	netinfo_packed_disk_t *netdisk;
+	rtinfo_disk_legacy_t *diskdev;
+	short disk_size;
+	
 	char *netbuild = NULL;
 	short netbuild_size = 0;
 	short netbuild_effective_size = 0;
@@ -75,6 +80,7 @@ int networkside(char *server, int port, int interval) {
 	printf("[ ] netinfo_packed_t       : %lu bytes\n", sizeof(netinfo_packed_t));
 	printf("[ ] netinfo_packed_net_t   : %lu bytes\n", sizeof(netinfo_packed_net_t));
 	printf("[ ] rtinfo_network_legacy_t: %lu bytes\n", sizeof(rtinfo_network_legacy_t));
+	printf("[ ] rtinfo_disk_legacy_t   : %lu bytes\n", sizeof(rtinfo_disk_legacy_t));
 	
 	/*
 	 * Initializing Network
@@ -82,6 +88,17 @@ int networkside(char *server, int port, int interval) {
 	truenet = rtinfo_init_network();
 	oldnbiface = -1;
 	
+	/*
+	 * Initializing Disks
+	 */
+	truedisk = rtinfo_init_disk("sd"); // FIXME
+	disk_size = sizeof(netinfo_packed_disk_t);
+	
+	for(i = 0; i < truedisk->nbdisk; i++)
+		disk_size += sizeof(rtinfo_disk_legacy_t) + strlen(truedisk->dev[i].name);
+	
+	printf("[ ] netinfo_disk_legacy_t  : %u bytes (%u disks)\n", disk_size, truedisk->nbdisk);
+	netdisk = malloc(disk_size);
 		
 	/*
 	 * Initializing CPU
@@ -156,12 +173,21 @@ int networkside(char *server, int port, int interval) {
 	/*
 	 * Building options
 	 */
-	packed_cast->options   = htobe32(0);	/* FIXME: Not used at this time */
+	packed_cast->options   = htobe32(USE_SUMMARY);
 	packed_cast->version   = htobe32(CLIENT_VERSION);
+	
+	// disks
+	netdisk->options       = htobe32(USE_DISK);
+	netdisk->version       = htobe32(CLIENT_VERSION);
+	netdisk->nbdisk        = htobe32(truedisk->nbdisk);
+	
+	if(gethostname(netdisk->hostname, sizeof(netdisk->hostname)))
+		diep("gethostname");
 	
 	/* Pre-reading data */
 	rtinfo_get_cpu(cpu);
 	rtinfo_get_network(truenet);
+	rtinfo_get_disk(truedisk);
 	
 	/* Working */
 	while(1) {
@@ -178,6 +204,9 @@ int networkside(char *server, int port, int interval) {
 		/* Reading Network */
 		rtinfo_get_network(truenet);
 		rtinfo_mk_network_usage(truenet, interval);
+		
+		rtinfo_get_disk(truedisk);
+		rtinfo_mk_disk_usage(truedisk, interval);
 		
 		if(!rtinfo_get_memory(&packed_cast->memory))
 			return 1;
@@ -259,10 +288,23 @@ int networkside(char *server, int port, int interval) {
 		
 		/* Sending info_net_t Packet */
 		netinfo_send_packed_net(sockfd, netbuild_cast, netbuild_effective_size, &remote);
+		
+		/*
+		 * Building disk packet
+		 */
+		diskdev = netdisk->disk;
+		
+		for(i = 0; i < truedisk->nbdisk; i++) {
+			netsize = netdisk_assemble(diskdev, truedisk->dev + i);
+			diskdev = (rtinfo_disk_legacy_t *) ((char *) diskdev + netsize);
+		}
+		
+		netinfo_send_packed_net(sockfd, (netinfo_packed_net_t *) netdisk, disk_size, &remote);
 	}
 
 	rtinfo_free_cpu(cpu);
 	rtinfo_free_network(truenet);
+	rtinfo_free_disk(truedisk);
 	
 	free(netbuild);
 	free(packedbuild);

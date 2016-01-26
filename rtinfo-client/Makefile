@@ -4,6 +4,7 @@ SRC=$(wildcard *.c)
 OBJ=$(SRC:.c=.o)
 
 ifdef STATIC
+	CFLAGS += -march=nocona
 	LDFLAGS += -static
 endif
 

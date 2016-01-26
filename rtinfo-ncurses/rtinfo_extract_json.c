@@ -29,8 +29,6 @@ client_data_t * extract_json_head(json_t *node, client_data_t *client) {
 	client->remoteip = strdup(json_string_obj(node, "remoteip"));
 	client->lasttime = json_ulong_obj(node, "lasttime");
 	
-	// printf("[+] Head: %s <> %s\n", client->hostname, client->remoteip);
-	
 	return client;
 }
 
@@ -50,9 +48,7 @@ client_data_t * extract_json_summary(json_t *node, client_data_t *client) {
 	client->summary.ram_used   = json_ulonglong_obj(subnode, "ram_used");
 	client->summary.swap_total = json_ulonglong_obj(subnode, "swap_total");
 	client->summary.swap_free  = json_ulonglong_obj(subnode, "swap_free");
-	
-	/* printf("[+] Memory: %llu %llu %llu %llu\n", client->summary.ram_total, client->summary.ram_used,
-	                                            client->summary.swap_total, client->summary.swap_free); */
+
 	
 	subnode = json_object_get(node, "battery");
 	json_check_object(subnode);
@@ -62,8 +58,6 @@ client_data_t * extract_json_summary(json_t *node, client_data_t *client) {
 	client->summary.battery_load   = json_ulong_obj(subnode, "load");
 	client->summary.battery_status = json_ulong_obj(subnode, "status");
 	
-	/* printf("[+] Battery: %lu %lu %ld %lu\n", client->summary.battery_full, client->summary.battery_now,
-	                                         client->summary.battery_load, client->summary.battery_status); */
 	
 	subnode = json_object_get(node, "cpu_usage");
 	json_check_array(subnode);
@@ -71,16 +65,12 @@ client_data_t * extract_json_summary(json_t *node, client_data_t *client) {
 	client->summary.cpu_count = json_array_size(subnode) - 1;
 	client->summary.cpu_usage = (long) json_number_value(json_array_get(subnode, 0));
 	
-	// printf("[+] CPU: %ld%% (Count: %ld)\n", client->summary.cpu_usage, client->summary.cpu_count);
 	
 	subnode = json_object_get(node, "loadavg");
 	json_check_array(subnode);
 	
 	for(i = 0; i < json_array_size(subnode) && i < 3; i++)
 		client->summary.loadavg[i] = (float) json_number_value(json_array_get(subnode, i));
-	
-	/* printf("[+] Load: %.2f %.2f %.2f\n", client->summary.loadavg[0], client->summary.loadavg[1],
-	                                     client->summary.loadavg[2]); */
 	
 	subnode = json_object_get(node, "sensors");
 	json_check_object(subnode);
@@ -96,9 +86,6 @@ client_data_t * extract_json_summary(json_t *node, client_data_t *client) {
 	
 	client->summary.sensors_hdd_peak = json_ulong_obj(subnode2, "peak");
 	client->summary.sensors_hdd_avg  = json_ulong_obj(subnode2, "average");
-	
-	/* printf("[+] Sensors: %lu %lu / %lu %lu\n", client->summary.sensors_cpu_avg, client->summary.sensors_cpu_crit,
-	                                           client->summary.sensors_hdd_avg, client->summary.sensors_hdd_peak); */
 	
 	return client;
 }
@@ -123,11 +110,30 @@ client_data_t * extract_json_network(json_t *node, client_data_t *client) {
 		client->network[i].rx_rate = json_ulonglong_obj(interface, "rx_rate");
 		client->network[i].tx_rate = json_ulonglong_obj(interface, "tx_rate");
 		client->network[i].speed   = json_ulonglong_obj(interface, "speed");
+	}
+	
+	return client;
+}
+
+client_data_t * extract_json_disk(json_t *node, client_data_t *client) {
+	json_t *subnode, *device;
+	size_t i;
+	
+	subnode = json_object_get(node, "disks");
+	json_check_array(subnode);
+	
+	client_init_disk(client, json_array_size(subnode));
+	
+	for(i = 0; i < json_array_size(subnode); i++) {
+		device = json_array_get(subnode, i);
+		json_check_object(device);
 		
-		/* printf("[+] Network [%s]: %llu, %llu (%llu/%llu) | %s, %lu\n", client->network[i].ifname, 
-		                                client->network[i].rx_data, client->network[i].tx_data,
-		                                client->network[i].rx_rate, client->network[i].tx_rate,
-		                                client->network[i].ip, client->network[i].speed); */
+		client->disk[i].devname       = strdup(json_string_obj(device, "name"));
+		client->disk[i].bytes_read    = json_ulonglong_obj(device, "bytes_read");
+		client->disk[i].bytes_written = json_ulonglong_obj(device, "bytes_written");
+		client->disk[i].read_speed    = json_ulonglong_obj(device, "read_speed");
+		client->disk[i].write_speed   = json_ulonglong_obj(device, "write_speed");
+		client->disk[i].iops          = json_ulonglong_obj(device, "iops");
 	}
 	
 	return client;
@@ -139,7 +145,6 @@ client_t * extract_json(char *text) {
 	unsigned int i;
 	client_t *clients;
 	
-	// printf("<%s>\n", text);
 	
 	if(!(root = json_loads(text, 0, &error))) {
 		display_error("json errors\n");
@@ -160,6 +165,7 @@ client_t * extract_json(char *text) {
 		extract_json_head(node, &clients->clients[i]);
 		extract_json_summary(node, &clients->clients[i]);
 		extract_json_network(node, &clients->clients[i]);
+		extract_json_disk(node, &clients->clients[i]);
 	}
 	
 	json_decref(root);

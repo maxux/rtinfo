@@ -84,10 +84,12 @@ void *thread_input(void *data) {
 	netinfo_packed_t *packed;
 	netinfo_packed_net_t *net;
 	rtinfo_network_legacy_t *read;
+	netinfo_packed_disk_t *disk;
+	rtinfo_disk_legacy_t *dev;
 	size_t checklength;
 	client_t *client;
 	thread_input_t *thread_input = (thread_input_t*) data;
-	uint32_t netindex;
+	uint32_t index;
 	
 	void *buffer = malloc(sizeof(char) * BUFFER_SIZE);
 	
@@ -173,12 +175,26 @@ void *thread_input(void *data) {
 				goto unlock;
 			}
 			
-		} else {
+		} else if(packed->options == USE_SUMMARY) {
 			/* Summary size */
 			checklength = sizeof(netinfo_packed_t) + (sizeof(rtinfo_cpu_legacy_t) * be32toh(packed->nbcpu));
 			
 			if((size_t) recvsize != checklength) {
 				warning("[-] input: warning: wrong summary datasize (%d bytes) from %s, should be %zu bytes.\n",
+					recvsize, inet_ntoa(remote.sin_addr), checklength);
+
+				goto unlock;
+			}
+			
+		} else if(packed->options == USE_DISK) {
+			/* Disk size, should not exceed 32 bytes per disk name */
+			disk = (netinfo_packed_disk_t *) packed;
+			disk->nbdisk = be32toh(disk->nbdisk);
+			
+			checklength = sizeof(netinfo_packed_disk_t) + (sizeof(rtinfo_disk_legacy_t) * disk->nbdisk) + (disk->nbdisk * 32);
+			
+			if((size_t) recvsize > checklength) {
+				warning("[-] input: warning: wrong disk datasize (%d bytes) from %s, should be <= %zu bytes.\n",
 					recvsize, inet_ntoa(remote.sin_addr), checklength);
 
 				goto unlock;
@@ -204,12 +220,12 @@ void *thread_input(void *data) {
 			client->net->nbiface = htobe32(client->net->nbiface);
 			read = client->net->net;
 			
-			for(netindex = 0; netindex < client->net->nbiface; netindex++) {
+			for(index = 0; index < client->net->nbiface; index++) {
 				convert_packed_net(read);
 				read = (rtinfo_network_legacy_t*) ((char*) read + sizeof(rtinfo_network_legacy_t) + read->name_length);
 			}
 
-		} else {			
+		} else if(packed->options == USE_SUMMARY) {			
 			/* Updating allocation */
 			if(client->summary_length != (size_t) recvsize) {
 				client->summary = (netinfo_packed_t *) realloc(client->summary, recvsize);
@@ -221,6 +237,23 @@ void *thread_input(void *data) {
 			
 			/* Correct indian */
 			convert_packed(client->summary);
+			
+		} else if(packed->options == USE_DISK) {
+			/* Updating allocation */
+			if(client->disk_length != (size_t) recvsize) {
+				client->disk = (netinfo_packed_disk_t *) realloc(client->disk, recvsize);
+				client->disk_length = (size_t) recvsize;
+			}
+			
+			memcpy(client->disk, buffer, recvsize);
+			
+			client->disk->nbdisk = htobe32(client->disk->nbdisk);
+			dev = client->disk->disk;
+			
+			for(index = 0; index < client->disk->nbdisk; index++) {
+				convert_packed_disk(dev);
+				dev = (rtinfo_disk_legacy_t *) ((char *) dev + sizeof(rtinfo_disk_legacy_t) + dev->name_length);
+			}
 		}
 		
 		/* Unlocking globals */

@@ -69,9 +69,12 @@ void dump(unsigned char *data, unsigned int len) {
 void debug_input(unsigned char *buffer, unsigned int recvsize) {
 	netinfo_packed_t *cast;
 	netinfo_packed_net_t *net;
+	netinfo_packed_disk_t *disk;
+	
 	rtinfo_network_legacy_t *read;
+	rtinfo_disk_legacy_t *dev;
 	uint32_t i;
-	char strip[16], ifname[64];
+	char strip[16], devname[64];
 	
 	dump(buffer, recvsize);
 		
@@ -96,13 +99,13 @@ void debug_input(unsigned char *buffer, unsigned int recvsize) {
 			if(!inet_ntop(AF_INET, &read->ip, strip, sizeof(strip)))
 				fprintf(stderr, "[-] Cannot extract ip !\n");
 			
-			if(read->name_length > sizeof(ifname)) {
+			if(read->name_length > sizeof(devname)) {
 				fprintf(stderr, "[-] Interface name too long\n");
 				goto next_read;
 			}
 			
-			strncpy(ifname, read->name, read->name_length);
-			ifname[read->name_length] = '\0';
+			strncpy(devname, read->name, read->name_length);
+			devname[read->name_length] = '\0';
 			
 			printf("[ ] Name : %s [%s]\n", read->name, strip);
 			printf("[ ] Speed: %u\n\n", packed_speed_rtinfo(read->speed));
@@ -120,7 +123,7 @@ void debug_input(unsigned char *buffer, unsigned int recvsize) {
 				);
 		}
 		
-	} else {
+	} else if(be32toh(cast->options & USE_SUMMARY)) {
 		printf("[+] Summary packet data:\n");
 		
 		printf("[ ] CPU Count  : %u\n", be32toh(cast->nbcpu));
@@ -156,5 +159,39 @@ void debug_input(unsigned char *buffer, unsigned int recvsize) {
 		
 		printf("[ ] Uptime     : %u\n", be32toh(cast->uptime.uptime));
 		printf("[ ] Timestamp  : %u\n\n", be32toh(cast->timestamp));
+		
+	} else if(be32toh(cast->options) & USE_DISK) {
+		disk = (netinfo_packed_disk_t *) cast;
+		
+		printf("[+] Disk packet data:\n");
+		printf("[ ] Disks: %d\n", be32toh(disk->nbdisk));
+		
+		dev = disk->disk;
+		
+		for(i = 0; i < be32toh(disk->nbdisk); i++) {
+			if(dev->name_length > sizeof(devname)) {
+				fprintf(stderr, "[-] Disk name too long\n");
+				goto next_disk;
+			}
+			
+			strncpy(devname, dev->name, dev->name_length);
+			devname[dev->name_length] = '\0';
+			
+			printf("[ ] Name : %s\n", dev->name);
+			
+			printf("[ ] Rate : %" PRIu64 " / %" PRIu64 "\n",
+				be64toh(dev->read_speed), be64toh(dev->write_speed));
+			
+			printf("[ ] Data : %" PRIu64 " / %" PRIu64 "\n",
+				be64toh(dev->bytes_read), be64toh(dev->bytes_written));
+				
+			printf("[ ] IOPS : %" PRIu64 " \n", be64toh(dev->iops));
+				
+			next_disk:
+				dev = (rtinfo_disk_legacy_t *) (
+					((char*) dev) + dev->name_length +
+					sizeof(rtinfo_disk_legacy_t)
+				);
+		}
 	}
 }

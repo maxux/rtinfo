@@ -20,6 +20,9 @@
 		struct netinfo_packed_net_t *net;
 		size_t net_length;
 		
+		struct netinfo_packed_disk_t *disk;
+		size_t disk_length;
+		
 		struct client_t *next;
 		
 	} client_t;

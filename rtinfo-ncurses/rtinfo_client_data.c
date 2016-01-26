@@ -45,6 +45,13 @@ client_data_t * client_init_network(client_data_t *client, size_t ifcount) {
 	return client;
 }
 
+client_data_t * client_init_disk(client_data_t *client, size_t diskcount) {
+	client->diskcount = diskcount;
+	client->disk = (client_disk_t*) calloc(diskcount, sizeof(client_disk_t));
+	
+	return client;
+}
+
 void client_delete(client_t *client) {
 	unsigned int i, j;
 	

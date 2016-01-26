@@ -80,6 +80,9 @@ client_t *stack_newclient(char *hostname, uint32_t remoteip) {
 	client->net_length     = 0;
 	client->net            = NULL;
 	
+	client->disk_length    = 0;
+	client->disk           = NULL;
+	
 	/* Add client on the stack, become the last client */
 	if(!stack_client(client)) {
 		// debug("[-] Stacking client failed\n");

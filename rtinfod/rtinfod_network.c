@@ -87,6 +87,14 @@ void convert_packed_net(rtinfo_network_legacy_t *net) {
 	net->down_rate    = htobe64(net->down_rate);
 }
 
+void convert_packed_disk(rtinfo_disk_legacy_t *dev) {
+	dev->bytes_read    = htobe64(dev->bytes_read);
+	dev->bytes_written = htobe64(dev->bytes_written);
+	dev->read_speed    = htobe64(dev->read_speed);
+	dev->write_speed   = htobe64(dev->write_speed);
+	dev->iops          = htobe64(dev->iops);
+}
+
 void convert_header(netinfo_packed_t *packed) {
 	packed->options  = be32toh(packed->options);
 	packed->clientid = be32toh(packed->clientid);

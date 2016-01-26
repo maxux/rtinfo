@@ -67,6 +67,37 @@ static json_t *json_node_network(rtinfo_network_legacy_t *net, uint32_t nbiface)
 	return array;
 }
 
+static json_t *json_node_disk(rtinfo_disk_legacy_t *disk, uint32_t nbdisk) {
+	rtinfo_disk_legacy_t *dev = disk;
+	char devname[64];
+	json_t *array, *device;
+	uint32_t i;
+	
+	array = json_array();
+	
+	for(i = 0; i < nbdisk; i++) {
+		device = json_object();
+		
+		/* grab name */
+		strncpy(devname, dev->name, dev->name_length);
+		devname[dev->name_length] = '\0';
+		
+		/* filling json */
+		json_object_set_new(device, "name", json_string(devname));
+		json_object_set_new(device, "bytes_read", json_integer(dev->bytes_read));
+		json_object_set_new(device, "bytes_written", json_integer(dev->bytes_written));
+		json_object_set_new(device, "read_speed", json_integer(dev->read_speed));
+		json_object_set_new(device, "write_speed", json_integer(dev->write_speed));
+		json_object_set_new(device, "iops", json_integer(dev->iops));
+		
+		json_array_append_new(array, device);
+		
+		dev = (rtinfo_disk_legacy_t *) ((char*) dev + sizeof(rtinfo_disk_legacy_t) + dev->name_length);
+	}
+	
+	return array;
+}
+
 static json_t *json_node_loadavg(uint32_t *loadavg) {
 	unsigned int i;
 	json_t *array;
@@ -182,6 +213,9 @@ char *output_json() {
 		
 		/* Network part */
 		json_object_set_new(root, "network", json_node_network(client->net->net, client->net->nbiface));
+		
+		/* Disk part */
+		json_object_set_new(root, "disks", json_node_disk(client->disk->disk, client->disk->nbdisk));
 		
 		/* Appending */
 		json_array_append_new(rtinfo, this);

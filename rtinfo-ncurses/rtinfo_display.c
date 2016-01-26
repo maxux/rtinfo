@@ -189,7 +189,9 @@ void build_header(WINDOW *win) {
 	title(win, "Time", 8, 0);
 	title(win, "Uptime", 6, 0);
 	title(win, "Bat.", 5, 0);
-	title(win, "CPU / HDD °C", 10, 1);
+	title(win, "CPU / HDD C", 13, 0);
+	title(win, "I/O MiB/s", 9, 0);
+	title(win, "IOPS", 10, 1);
 	wprintw(win, "\n");
 	
 	split(win);
@@ -406,7 +408,34 @@ void print_client_summary(client_data_t *client) {
 			
 		else wattrset(root_window, LEVEL_COLD);
 		
-		wprintw(root_window, "(%d)", client->summary.sensors_hdd_peak);
+		wprintw(root_window, "(%d) ", client->summary.sensors_hdd_peak);
+		
+	} else wprintw(root_window, "    ");
+	
+	separe(root_window);
+	
+	if(client->diskcount > 0) {
+		double speed = 0;
+		long iops = 0;
+		
+		for(i = 0; i < (int) client->diskcount; i++) {
+			speed += (client->disk[i].read_speed + client->disk[i].write_speed) / (1024 * 1024.0);
+			iops  += client->disk[i].iops;
+		}
+		
+		/*
+		if(client->disk[i]. > hdd_limit[1])
+			wattrset(root_window, LEVEL_HIGH);
+		
+		else if(client->summary.sensors_hdd_peak > hdd_limit[0])
+			wattrset(root_window, LEVEL_WARN);
+			
+		else wattrset(root_window, LEVEL_COLD);
+		*/
+		
+		wprintw(root_window, " % 9.1f ", speed);
+		separe(root_window);
+		wprintw(root_window, " % 7ld", iops);
 		
 	} else wprintw(root_window, "    ");
 	

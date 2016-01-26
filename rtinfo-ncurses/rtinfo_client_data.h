@@ -39,6 +39,17 @@
 		
 	} client_network_t;
 	
+	typedef struct client_disk_t {
+		char *devname;
+		
+		unsigned long long bytes_read;
+		unsigned long long bytes_written;
+		unsigned long long read_speed;
+		unsigned long long write_speed;
+		unsigned long long iops;
+		
+	} client_disk_t;
+	
 	typedef struct client_data_t {
 		char *hostname;
 		char *remoteip;
@@ -48,6 +59,9 @@
 		
 		size_t ifcount;
 		struct client_network_t *network;
+		
+		size_t diskcount;
+		struct client_disk_t *disk;
 		
 	} client_data_t;
 	
@@ -59,5 +73,6 @@
 	
 	client_t * client_create(size_t count);
 	client_data_t * client_init_network(client_data_t *client, size_t ifcount);
+	client_data_t * client_init_disk(client_data_t *client, size_t diskcount);
 	void client_delete(client_t *client);
 #endif

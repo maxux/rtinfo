@@ -3,6 +3,7 @@
 		
 	void convert_packed(netinfo_packed_t *packed);
 	void convert_packed_net(rtinfo_network_legacy_t *net);
+	void convert_packed_disk(rtinfo_disk_legacy_t *dev);
 	void convert_header(netinfo_packed_t *packed);
 	
 	uint16_t packed_speed_rtinfo(netinfo_speed_t speed);

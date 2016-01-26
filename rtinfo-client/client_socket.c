@@ -136,3 +136,18 @@ void convert_header(netinfo_packed_t *packed) {
 	packed->clientid = be32toh(packed->clientid);
 	packed->version  = be32toh(packed->version);
 }
+
+size_t netdisk_assemble(rtinfo_disk_legacy_t *read, rtinfo_disk_dev_t *dev) {
+	/* Just convert data */
+	read->bytes_read    = htobe64(dev->current.read);
+	read->bytes_written = htobe64(dev->current.written);
+	read->read_speed    = htobe64(dev->read_speed);
+	read->write_speed   = htobe64(dev->write_speed);
+	read->iops          = htobe64(dev->iops);
+	
+	/* Building name */
+	read->name_length = strlen(dev->name);
+	strncpy(read->name, dev->name, read->name_length);
+	
+	return sizeof(rtinfo_disk_legacy_t) + read->name_length;
+}

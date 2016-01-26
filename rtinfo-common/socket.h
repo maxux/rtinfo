@@ -14,7 +14,9 @@
 		USE_BATTERY	= 16,
 		USE_TIME	= 32,
 		USE_NETWORK	= 64,
-		
+		USE_DISK    = 128,
+		USE_SUMMARY = 256,
+				
 		USE_DEBUG	= 131072
 		
 	} netinfo_options_t;
@@ -76,4 +78,27 @@
 		rtinfo_network_legacy_t net[];
 		
 	} __attribute__ ((packed)) netinfo_packed_net_t;
+	
+	typedef struct rtinfo_disk_legacy_t {
+		uint64_t bytes_read;
+		uint64_t bytes_written;
+		uint64_t read_speed;
+		uint64_t write_speed;
+		uint64_t iops;
+		uint8_t name_length;
+		char name[];
+		
+	} __attribute__ ((packed)) rtinfo_disk_legacy_t;
+	
+	typedef struct netinfo_packed_disk_t {
+		/* Common Packed/Net */
+		netinfo_options_t options;
+		char hostname[32];
+		uint32_t nbdisk;
+		uint32_t version;
+		
+		/* Specific */
+		rtinfo_disk_legacy_t disk[];
+		
+	} __attribute__ ((packed)) netinfo_packed_disk_t;
 #endif
