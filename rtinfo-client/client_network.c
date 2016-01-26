@@ -46,7 +46,7 @@ void dump(unsigned char *data, unsigned int len) {
 	}
 }
 
-int networkside(char *server, int port, int interval) {
+int networkside(char *server, int port, int interval, char *disk) {
 	netinfo_packed_t *packed_cast;
 	char *packedbuild;
 	short packedbuild_size;
@@ -91,7 +91,7 @@ int networkside(char *server, int port, int interval) {
 	/*
 	 * Initializing Disks
 	 */
-	truedisk = rtinfo_init_disk("sd"); // FIXME
+	truedisk = rtinfo_init_disk(disk);
 	disk_size = sizeof(netinfo_packed_disk_t);
 	
 	for(i = 0; i < truedisk->nbdisk; i++)

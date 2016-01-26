@@ -4,7 +4,7 @@
 	#define DEFAULT_PORT		9930
 	#define DEFAULT_HOST        "localhost"
 
-	int networkside(char *server, int port, int interval);
+	int networkside(char *server, int port, int interval, char *disk);
 	
 	#ifdef _WIN32
 		#include "windows.h"
