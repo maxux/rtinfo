@@ -37,10 +37,10 @@ WINDOW *root_window, *wdebug;
 
 /* Network rate colors */
 unsigned int rate_limit[] = {
-		2   * 1024,		/* 2   Ko/s | Magenta	*/
-		100 * 1024,		/* 100 Ko/s | Cyan	*/
-		1.5 * 1024 * 1024,	/* 1.5 Mo/s | Yellow	*/
-		20  * 1024 * 1024,	/* 20  Mo/s | Red	*/
+	2   * 1024,		/* 2   Ko/s | Magenta	*/
+	100 * 1024,		/* 100 Ko/s | Cyan	*/
+	1.5 * 1024 * 1024,	/* 1.5 Mo/s | Yellow	*/
+	20  * 1024 * 1024,	/* 20  Mo/s | Red	*/
 };
 
 unsigned int disk_limit[] = {
@@ -57,16 +57,16 @@ unsigned int iops_limit[] = {
 
 /* Memory (RAM/SWAP) level colors */
 unsigned int memory_limit[] = {
-		30,	/* 30% | White  */
-		50,	/* 50% | Yellow */
-		85,	/* 85% | Red    */
+	30,	/* 30% | White  */
+	50,	/* 50% | Yellow */
+	85,	/* 85% | Red    */
 };
 
 /* CPU Usage level colors */
 unsigned int cpu_limit[] = {
-		30,	/* 30% | White  */
-		50,	/* 50% | Yellow */
-		85,	/* 85% | Red	*/
+	30,	/* 30% | White  */
+	50,	/* 50% | Yellow */
+	85,	/* 85% | Red	*/
 };
 
 /* HDD sensors level colors */
@@ -458,10 +458,10 @@ void print_client_summary(client_data_t *client) {
 		if(iops > iops_limit[2])
 			wattrset(root_window, LEVEL_HIGH);
 		
-		else if(iops > iops_limit[2])
+		else if(iops > iops_limit[1])
 			wattrset(root_window, LEVEL_WARN);
 		
-		else if(iops > iops_limit[2])
+		else if(iops > iops_limit[0])
 			wattrset(root_window, LEVEL_ACTIVE);
 			
 		else wattrset(root_window, LEVEL_COLD);
