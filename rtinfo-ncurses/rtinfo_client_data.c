@@ -33,6 +33,7 @@ client_t * client_create(size_t count) {
 		client->clients[i].hostname = NULL;
 		client->clients[i].remoteip = NULL;
 		client->clients[i].network  = NULL;
+		client->clients[i].disk     = NULL;
 	}
 	
 	return client;
@@ -64,7 +65,11 @@ void client_delete(client_t *client) {
 			free(client->clients[i].network[j].ip);
 		}
 		
+		for(j = 0; j < client->clients[i].diskcount; j++)
+			free(client->clients[i].disk[j].devname);
+		
 		free(client->clients[i].network);
+		free(client->clients[i].disk);
 	}
 	
 	free(client->clients);
