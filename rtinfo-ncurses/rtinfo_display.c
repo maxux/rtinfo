@@ -384,7 +384,7 @@ void print_client_summary(client_data_t *client) {
 		
 	} else {
 		wattrset(root_window, LEVEL_COLD);
-		wprintw(root_window, " .. ");
+		wprintw(root_window, " ...");
 	}
 	
 	wattrset(root_window, LEVEL_COLD);
@@ -415,7 +415,7 @@ void print_client_summary(client_data_t *client) {
 		
 	} else {
 		wattrset(root_window, LEVEL_COLD);
-		wprintw(root_window, " ... (..) ");
+		wprintw(root_window, ".. (..) ");
 	}
 	
 	separe(root_window);
