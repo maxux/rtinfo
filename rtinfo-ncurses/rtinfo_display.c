@@ -43,6 +43,18 @@ unsigned int rate_limit[] = {
 		20  * 1024 * 1024,	/* 20  Mo/s | Red	*/
 };
 
+unsigned int disk_limit[] = {
+	10,  /* 10 MiB/s  | White  */
+	80,  /* 80 MiB/s  | Yellow */
+	150, /* 150 MiB/s | Red    */
+};
+
+unsigned int iops_limit[] = {
+	10,  /* 10  | White  */
+	100, /* 100 | Yellow */
+	300, /* 300 | Red    */
+};
+
 /* Memory (RAM/SWAP) level colors */
 unsigned int memory_limit[] = {
 		30,	/* 30% | White  */
@@ -429,18 +441,31 @@ void print_client_summary(client_data_t *client) {
 			iops  += client->disk[i].iops;
 		}
 		
-		/*
-		if(client->disk[i]. > hdd_limit[1])
+		if(speed > disk_limit[2])
 			wattrset(root_window, LEVEL_HIGH);
 		
-		else if(client->summary.sensors_hdd_peak > hdd_limit[0])
+		else if(speed > disk_limit[1])
 			wattrset(root_window, LEVEL_WARN);
+		
+		else if(speed > disk_limit[0])
+			wattrset(root_window, LEVEL_ACTIVE);
 			
 		else wattrset(root_window, LEVEL_COLD);
-		*/
 		
 		wprintw(root_window, " % 9.1f ", speed);
 		separe(root_window);
+		
+		if(iops > iops_limit[2])
+			wattrset(root_window, LEVEL_HIGH);
+		
+		else if(iops > iops_limit[2])
+			wattrset(root_window, LEVEL_WARN);
+		
+		else if(iops > iops_limit[2])
+			wattrset(root_window, LEVEL_ACTIVE);
+			
+		else wattrset(root_window, LEVEL_COLD);
+		
 		wprintw(root_window, " % 7ld", iops);
 		
 	} else wprintw(root_window, "    ");
