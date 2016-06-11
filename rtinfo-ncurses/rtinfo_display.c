@@ -201,9 +201,9 @@ void build_header(WINDOW *win) {
 	title(win, "Time", 8, 0);
 	title(win, "Uptime", 6, 0);
 	title(win, "Bat.", 5, 0);
-	title(win, "CPU / HDD C", 13, 0);
+	title(win, "CPU / HDD C", 12, 0);
 	title(win, "I/O MiB/s", 9, 0);
-	title(win, "IOPS", 10, 1);
+	// title(win, "IOPS", 10, 1);
 	wprintw(win, "\n");
 	
 	split(win);
@@ -396,7 +396,7 @@ void print_client_summary(client_data_t *client) {
 		
 	} else {
 		wattrset(root_window, LEVEL_COLD);
-		wprintw(root_window, " ...");
+		wprintw(root_window, " --");
 	}
 	
 	wattrset(root_window, LEVEL_COLD);
@@ -411,7 +411,7 @@ void print_client_summary(client_data_t *client) {
 			
 		else wattrset(root_window, LEVEL_COLD);
 		
-		wprintw(root_window, "% 2d ", client->summary.sensors_hdd_avg);
+		wprintw(root_window, "%02d ", client->summary.sensors_hdd_avg);
 	}
 	
 	if(client->summary.sensors_hdd_peak > 0) {
@@ -427,18 +427,18 @@ void print_client_summary(client_data_t *client) {
 		
 	} else {
 		wattrset(root_window, LEVEL_COLD);
-		wprintw(root_window, ".. (..) ");
+		wprintw(root_window, "--      ");
 	}
 	
 	separe(root_window);
 	
 	if(client->diskcount > 0) {
 		double speed = 0;
-		long iops = 0;
+		// long iops = 0;
 		
 		for(i = 0; i < (int) client->diskcount; i++) {
 			speed += (client->disk[i].read_speed + client->disk[i].write_speed) / (1024 * 1024.0);
-			iops  += client->disk[i].iops;
+			// iops  += client->disk[i].iops;
 		}
 		
 		if(speed > disk_limit[2])
@@ -453,6 +453,8 @@ void print_client_summary(client_data_t *client) {
 		else wattrset(root_window, LEVEL_COLD);
 		
 		wprintw(root_window, " % 9.1f ", speed);
+		
+		/*
 		separe(root_window);
 		
 		if(iops > iops_limit[2])
@@ -467,8 +469,11 @@ void print_client_summary(client_data_t *client) {
 		else wattrset(root_window, LEVEL_COLD);
 		
 		wprintw(root_window, " % 7ld", iops);
+		*/
 		
-	} else wprintw(root_window, "    ");
+	} else wprintw(root_window, "        -- ");
+	
+	separe(root_window);
 	
 	/* End of line */
 	wclrtoeol(root_window);
@@ -608,7 +613,7 @@ void print_client_network(client_data_t *client, int units) {
 	}
 }
 
-void print_whole_data(client_t *root, int units) {
+void print_whole_data(client_t *root, int units, int display) {
 	unsigned int i;
 	wmove(root_window, 0, 0);
 	
@@ -618,6 +623,14 @@ void print_whole_data(client_t *root, int units) {
 		print_client_summary(&root->clients[i]);
 	
 	split(root_window);
+	
+	/* if only displaying summary, stopping here */
+	if(display == DISPLAY_SUMMARY) {
+		erase_anythingelse(root_window);
+		wrefresh(root_window);
+		return;
+	}
+	
 	build_netheader(root_window);
 	
 	network_skpped = 0;

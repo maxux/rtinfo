@@ -37,9 +37,10 @@
 #define OUTPUT_DEFAULT_HOST     "localhost"
 
 static struct option long_options[] = {
-	{"host", required_argument, 0, 'h'},
-	{"port", required_argument, 0, 'p'},
-	{"bits", no_argument,       0, 'b'},
+	{"host",    required_argument, 0, 'h'},
+	{"port",    required_argument, 0, 'p'},
+	{"bits",    no_argument,       0, 'b'},
+	{"summary", no_argument,       0, 's'},
 	{0, 0, 0, 0}
 };
 
@@ -67,6 +68,7 @@ void print_usage(char *app) {
 	printf(" --host <host>   specify remote daemon host (default: %s)\n", OUTPUT_DEFAULT_HOST);
 	printf(" --port <port>   specify remote daemon port (default: %d)\n", OUTPUT_DEFAULT_PORT);
 	printf(" --bits          use bits for network units (default are bytes)\n");
+	printf(" --summary       display only summary, no network table\n");
 	
 	exit(EXIT_FAILURE);
 }
@@ -80,10 +82,11 @@ int main(int argc, char *argv[]) {
 	char *server = OUTPUT_DEFAULT_HOST;
 	int port = OUTPUT_DEFAULT_PORT;
 	int units = UNITS_BYTES;
+	int display = DISPLAY_ALL;
 	
 	/* Checking arguments */
 	while(1) {
-		i = getopt_long(argc, argv, "h:pb", long_options, &option_index);
+		i = getopt_long(argc, argv, "h:pbs", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if(i == -1)
@@ -100,6 +103,10 @@ int main(int argc, char *argv[]) {
 				
 			case 'b':
 				units = UNITS_BITS;
+				break;
+			
+			case 's':
+				display = DISPLAY_SUMMARY;
 				break;
 
 			/* unrecognized option */
@@ -128,7 +135,7 @@ int main(int argc, char *argv[]) {
 		/* grabbing data */
 		if((json = socket_rtinfo(server, port))) {
 			if((root = extract_json(json))) {
-				print_whole_data(root, units);
+				print_whole_data(root, units, display);
 				client_delete(root);
 			}
 			
