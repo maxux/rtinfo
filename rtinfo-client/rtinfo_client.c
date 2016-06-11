@@ -68,8 +68,9 @@ int main(int argc, char *argv[]) {
 	int daemon = 0;
 	pid_t process = 0;
 	
-	if((int) rtinfo_version() != 4 || rtinfo_version() < 4.00) {
-		fprintf(stderr, "[-] Require librtinfo 4 (>= 4.00)\n");
+	if(rtinfo_version() < 4.11) {
+		fprintf(stderr, "[-] librtinfo version not compatible: %.2f\n", rtinfo_version());
+		fprintf(stderr, "[-] you need at least librtinfo version: 4.11\n");
 		return 1;
 	}
 	

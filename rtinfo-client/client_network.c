@@ -189,6 +189,8 @@ int networkside(char *server, int port, int interval, char *disk) {
 	rtinfo_get_network(truenet);
 	rtinfo_get_disk(truedisk);
 	
+	rtinfo_init_temp_hdd(&packed_cast->temp_hdd);
+	
 	/* Working */
 	while(1) {
 		/* Sleeping */
