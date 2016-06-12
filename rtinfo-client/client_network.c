@@ -61,6 +61,7 @@ int networkside(char *server, int port, int interval, char *disk) {
 	rtinfo_disk_t *truedisk;
 	netinfo_packed_disk_t *netdisk;
 	rtinfo_disk_legacy_t *diskdev;
+	rtinfo_temp_hdd_t hddtemp;
 	short disk_size;
 	
 	char *netbuild = NULL;
@@ -189,7 +190,7 @@ int networkside(char *server, int port, int interval, char *disk) {
 	rtinfo_get_network(truenet);
 	rtinfo_get_disk(truedisk);
 	
-	rtinfo_init_temp_hdd(&packed_cast->temp_hdd);
+	rtinfo_init_temp_hdd(&hddtemp);
 	
 	/* Working */
 	while(1) {
@@ -228,8 +229,11 @@ int networkside(char *server, int port, int interval, char *disk) {
 		if(!rtinfo_get_temp_cpu(&packed_cast->temp_cpu))
 			return 1;
 		
-		if(!rtinfo_get_temp_hdd(&packed_cast->temp_hdd))
+		if(!rtinfo_get_temp_hdd(&hddtemp))
 			return 1;
+		
+		packed_cast->temp_hdd.peak = hddtemp.peak;
+		packed_cast->temp_hdd.hdd_average = hddtemp.hdd_average;
 		
 		/* Reading Time Info */
 		time((time_t*) &packed_cast->timestamp);

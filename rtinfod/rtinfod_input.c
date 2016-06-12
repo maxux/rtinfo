@@ -39,6 +39,7 @@
 #include "rtinfod_network.h"
 #include "rtinfod_input.h"
 #include "rtinfod_debug.h"
+#include "rtinfod_output.h"
 
 char *__bind_input[MAX_NETWORK_BIND] = {"0.0.0.0"};
 int __bind_input_count = 1;

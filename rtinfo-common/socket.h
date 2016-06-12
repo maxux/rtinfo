@@ -36,6 +36,12 @@
 		
 	} __attribute__ ((packed)) rtinfo_cpu_legacy_t;
 	
+	typedef struct rtinfo_temp_hdd_legacy_t {
+		uint16_t peak;
+		uint16_t hdd_average;
+		
+	} __attribute__ ((packed)) rtinfo_temp_hdd_legacy_t;
+	
 	typedef struct netinfo_packed_t {
 		/* Common Packed/Net */
 		netinfo_options_t options;
@@ -49,7 +55,7 @@
 		uint32_t loadavg[3];           /* FIXME: use something else... */
 		rtinfo_battery_t battery;
 		rtinfo_temp_cpu_t temp_cpu;
-		rtinfo_temp_hdd_t temp_hdd;
+		rtinfo_temp_hdd_legacy_t temp_hdd;
 		rtinfo_uptime_t uptime;
 		uint64_t timestamp;
 		rtinfo_cpu_legacy_t cpu[];

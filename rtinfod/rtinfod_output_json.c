@@ -132,7 +132,7 @@ static json_t *json_node_temp_cpu(rtinfo_temp_cpu_t *temp) {
 	return node;
 }
 
-static json_t *json_node_temp_hdd(rtinfo_temp_hdd_t *temp) {
+static json_t *json_node_temp_hdd(rtinfo_temp_hdd_legacy_t *temp) {
 	json_t *node;
 	
 	node = json_object();
