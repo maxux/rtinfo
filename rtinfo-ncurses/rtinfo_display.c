@@ -347,7 +347,7 @@ void print_client_summary(client_data_t *client) {
 	
 	/* Print remote uptime */
 	separe(root_window);
-	wprintw(root_window, " % 4d %s ", uptime_value(client->summary.uptime), uptime_unit(client->summary.uptime));
+	wprintw(root_window, "% 5d %s ", uptime_value(client->summary.uptime), uptime_unit(client->summary.uptime));
 	
 	/* Print remote battery status */
 	separe(root_window);
