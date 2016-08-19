@@ -1,5 +1,10 @@
 include config.mk
 
+ifdef STATIC
+	CFLAGS += -march=nocona
+	LDFLAGS += -static
+endif
+
 SRC=$(wildcard *.c)
 OBJ=$(SRC:.c=.o)
 
