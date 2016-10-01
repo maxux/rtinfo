@@ -6,12 +6,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
@@ -45,35 +45,36 @@ void diep(char *str) {
 
 void print_usage(char *app) {
 	(void) app;
-	
+
 	printf("rtinfo-client (v%.3f) command line", CLIENT_VERSION);
-	
+
 	printf(" --host <host>      specify remote daemon host (default: %s)\n", DEFAULT_HOST);
 	printf(" --port <port>      specify remote daemon port (default: %d)\n", DEFAULT_PORT);
 	printf(" --interval <msec>  interval between two measure (default is 1000 (1s))\n");
 	printf(" --disk <prefix>    filter disk prefix (eg: 'sd' will match sda, sdb, ...)\n");
 	printf(" --daemon           run the client in background\n");
-	
+
 	exit(EXIT_FAILURE);
 }
 
 int main(int argc, char *argv[]) {
 	int i, option_index = 0;
-	
+
 	char *server = "localhost";
 	int port = DEFAULT_PORT;
 	int interval = 1000;
-	char *disk = NULL;
-	
+	char **disks = NULL;
+	int sdisks = 0;
+
 	int daemon = 0;
 	pid_t process = 0;
-	
+
 	if(rtinfo_version() < 4.11) {
 		fprintf(stderr, "[-] librtinfo version not compatible: %.2f\n", rtinfo_version());
 		fprintf(stderr, "[-] you need at least librtinfo version: 4.11\n");
 		return 1;
 	}
-	
+
 	/* Checking arguments */
 	while(1) {
 		i = getopt_long(argc, argv, "h:p:i:dk:", long_options, &option_index);
@@ -86,19 +87,23 @@ int main(int argc, char *argv[]) {
 			case 'h':
 				server = strdup(optarg);
 				break;
-				
+
 			case 'p':
 				port = atoi(optarg);
 				break;
-				
+
 			case 'i':
 				interval = atoi(optarg);
 				break;
-			
+
 			case 'k':
-				disk = strdup(optarg);
+				if(!(disks = realloc(disks, sizeof(char *) * (sdisks + 1))))
+					diep("realloc");
+
+				disks[sdisks] = strdup(optarg);
+				sdisks++;
 				break;
-			
+
 			case 'd':
 				daemon = 1;
 				break;
@@ -114,20 +119,23 @@ int main(int argc, char *argv[]) {
 				abort();
 		}
 	}
-	
+
 	if(daemon) {
 		// cannot fork
 		if((process = fork()) < 0)
 			diep("[-] fork");
-		
+
 		// closing parent
 		if(process)
 			return 0;
-		
+
 		close(STDIN_FILENO);
 		close(STDOUT_FILENO);
 		close(STDERR_FILENO);
 	}
-	
-	return networkside(server, port, interval, disk);
+
+	for(i = 0; i < sdisks; i++)
+		printf("Disk %d: %s\n", i, disks[i]);
+
+	return networkside(server, port, interval, disks, sdisks);
 }
