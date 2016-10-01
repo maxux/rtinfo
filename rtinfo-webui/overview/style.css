@@ -1,0 +1,42 @@
+body {
+	transition: 1s;
+}
+
+#main-menu {
+	width: 100%;
+	text-align: center;
+	border-bottom: solid 3px #4D4D4D;
+	margin-bottom: 30px;
+}
+
+#main-menu a {
+	margin: 10px;
+}
+
+#container {
+	margin-top: 25px;
+}
+
+table tbody {
+	font-family: monospace;
+	font-size: 11px;
+}
+
+table tbody tr td {
+	border-left: solid 1px #E5E5E5;
+	border-right: solid 1px #E5E5E5;
+}
+
+table tbody tr td:first-child {
+	border-left: none;
+}
+
+table tbody tr td:last-child {
+	border-right: none;
+}
+
+table tbody tr td.table-title {
+	text-align: center;
+	padding: 12px;
+	font-weight: bold;
+}

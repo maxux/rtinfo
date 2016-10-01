@@ -1,0 +1,120 @@
+html {
+	height: 100%;
+	-moz-user-select: none;
+	-khtml-user-select: none;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+body {
+	font-family: "Trebuchet MS", Helvetica, sans-serif;
+	background: radial-gradient(ellipse at center, #f2f5f6 0%,#e3eaed 65%,#c8d7dc 100%);
+}
+
+body.connected {
+	background: #111111;
+	background: radial-gradient(ellipse at center, #212023 0%,#000000 100%);
+}
+
+body.disconnected {
+	background: radial-gradient(ellipse at center, #a90329 0%,#8f0222 44%,#6d0019 100%);
+}
+
+h1.root {
+	margin: 0;
+	padding: 0 0 0 20px;
+	border-bottom: dashed 1px #4D4D4D;
+	color: #E6E6FA;
+}
+
+h5 {
+	font-weight: bold;
+	font-size: 32px;
+	color: #FFFFFF;
+	text-align: center;
+	height: 100%;
+}
+
+section {
+	padding: 10px;
+	border-radius: 10px;
+}
+
+article {
+	width: 250px;
+	height: 85px;
+	float: left;
+	border: solid 1px #8C8C8C;
+	color: #FFFFFF;
+	display: block;
+	margin: 8px 20px 0 0;
+	text-shadow: 0 0 3px #1A1A1A;
+	cursor: pointer;
+}
+
+article.click {
+	cursor: pointer;
+}
+
+article.default { background-color: #728A92; transition: background-color 1.5s; }
+article.default:hover, article.default-hover { background-color: #417180; }
+
+article.success { background-color: #369036; transition: background-color 1.5s; }
+article.success:hover, article.success-hover { background-color: #106110; }
+
+article.fail { background-color: #A52A2A; transition: background-color 1.5s; }
+article.fail:hover, article.fail-hover { background-color: #781717; }
+
+article.alternate1 { background-color: #7B7BCE; transition: background-color 1.5s; }
+article.alternate1:hover, article.alternate1-hover { background-color: #3A3ACB; }
+
+article.alternate2 { background-color: #A065A0; transition: background-color 1.5s; }
+article.alternate2:hover, article.alternate2-hover { background-color: #7F3D7F; }
+
+article.warning { background-color: #D76B27; transition: background-color 1.5s; }
+article.warning:hover, article.warning-hover { background-color: #C84D00; }
+
+article h1 {
+	border-color: #FFFFFF;
+	font-size: 18px;
+	margin: 0;
+	background-color: #1A1A1A;
+	padding-left: 10px;
+	height: 26px;
+	line-height: 26px;
+}
+
+article h2 {
+	font-size: 18px;
+	margin: 10px 0 0 0;
+	text-align: center;
+}
+
+article h2.full {
+	display: table-cell;
+	vertical-align: middle;
+	width: 250px;
+	height: 60px;
+}
+
+article h3 {
+	font-size: 12px;
+	text-align: center;
+	margin: 0;
+	font-weight: normal;
+}
+
+.clear {
+	clear: both;
+}
+
+.container {
+	color: #E5E5E5 !important;
+}
+
+.littlelink {
+	cursor: pointer;
+	margin-bottom: 10px;
+	color: #ADD8E6;
+	text-align: center;
+}
