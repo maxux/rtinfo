@@ -40,3 +40,9 @@ clean:
 mrproper: clean
 	$(RM) $(EXEC)
 
+install:
+	mkdir -p $(DESTDIR)$(PREFIX)/bin
+	cp -v $(EXEC) $(DESTDIR)$(PREFIX)/bin/
+
+uninstall:
+	rm -vf $(DESTDIR)$(PREFIX)/bin/$(EXEC)

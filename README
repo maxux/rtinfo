@@ -12,8 +12,8 @@ Dependencies
 ============
 
         rtinfo-client  depends on librtinfo
-        rtinfod        depends on librtinfo
-        rtinfo-ncurses depends on librtinfo and libncurses
+        rtinfod        depends on librtinfo and jansson
+        rtinfo-ncurses depends on librtinfo, jansson and libncurses
         librtinfo can be found here: https://github.com/maxux/librtinfo
 
 How to use it

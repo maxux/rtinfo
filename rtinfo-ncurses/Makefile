@@ -23,3 +23,9 @@ clean:
 mrproper: clean
 	rm -fv $(EXEC)
 
+install:
+	mkdir -p $(DESTDIR)$(PREFIX)/bin
+	cp -v $(EXEC) $(DESTDIR)$(PREFIX)/bin/
+
+uninstall:
+	rm -fv $(DESTDIR)$(PREFIX)/bin/$(EXEC)
