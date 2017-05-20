@@ -237,8 +237,9 @@ void print_client_summary(client_data_t *client) {
 	int i;
 	float memory_percent, swap_percent;
 	struct tm * timeinfo;
-	char buffer[64];
-	
+	char buffer[64], *format;
+	uint8_t batload = 0;
+
 	if(client->lasttime < time(NULL) - 30)
 		wattrset(root_window, A_BOLD | COLOR_PAIR(4));
 		
@@ -283,8 +284,10 @@ void print_client_summary(client_data_t *client) {
 		wattrset(root_window, LEVEL_ACTIVE);
 	
 	else wattrset(root_window, LEVEL_COLD);
-	
-	wprintw(root_window, "%6lld %s (%2.0f%%) ", client->summary.ram_used / 1024, units_bytes[1], memory_percent);
+
+	format = (memory_percent > 99.0) ? "%6lld %s (%3.0f%%)" : "%6lld %s (%2.0f%%) ";
+	wprintw(root_window, format, client->summary.ram_used / 1024, units_bytes[1], memory_percent);
+
 	wattrset(root_window, COLOR_PAIR(1));
 	
 	separe(root_window);
@@ -301,13 +304,10 @@ void print_client_summary(client_data_t *client) {
 			wattrset(root_window, LEVEL_ACTIVE);
 		
 		else wattrset(root_window, LEVEL_COLD);
-		
-		/* FIXME: width fail on %2.0f when full */
-		if(swap_percent == 100)
-			swap_percent = 99;
-			
-		wprintw(root_window, "%6lld %s (%2.0f%%) ", (client->summary.swap_total - client->summary.swap_free) / 1024, units_bytes[1], swap_percent);
-		
+
+		format = (swap_percent > 99.0) ? "%6lld %s (%3.0f%%)" : "%6lld %s (%2.0f%%) ";
+		wprintw(root_window, format, (client->summary.swap_total - client->summary.swap_free) / 1024, units_bytes[1], swap_percent);
+
 	} else {
 		wattrset(root_window, A_BOLD | COLOR_PAIR(8));	/* Magenta */
 		wprintw(root_window, "    No swap     ");
