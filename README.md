@@ -2,18 +2,12 @@
 rtinfo is a collection of tools to centralize realtime system monitoring
 
 ## Contents
-### rtinfo-client
-Remote udp client (using librtinfo to collects data)
+- `rtinfo-client`: remote udp client (using librtinfo to collects data)
+- `rtinfod`: daemon receiving status from `rtinfo-client` and provide a json output over http
+- `rtinfo-ncurses`: a ncurse based interface to shows json contents from `rtinfod`
+- `rtinfo-webui`: some demo html files used to display the json.
 
-### rtinfod
-Daemon receiving status from `rtinfo-client` and provide a json output over http
-
-### rtinfo-ncurses
-A ncurse based interface to shows json contents from `rtinfod`
-
-### rtinfo-webui
-Some demo html files used to display the json.
-For a better version, please check (https://github.com/maxux/rtinfo-dashboard)[https://github.com/maxux/rtinfo-dashboard]
+For a better html version, please check [maxux/rtinfo-dashboard](https://github.com/maxux/rtinfo-dashboard)
 
 # Dependencies
 
@@ -21,7 +15,7 @@ For a better version, please check (https://github.com/maxux/rtinfo-dashboard)[h
 - `rtinfod`: depends on `librtinfo` and `jansson`
 - `rtinfo-ncurses`: depends on `librtinfo` (compile-time), `jansson` and `libncurses`
 
-- librtinfo can be found here: (https://github.com/maxux/librtinfo)[https://github.com/maxux/librtinfo]
+- `librtinfo` can be found here: [maxux/librtinfo](https://github.com/maxux/librtinfo)
 
 # How to use it
 
@@ -34,7 +28,7 @@ You need to compile each wanted sub-directory. Just type 'make' on it.
 **Warning:** there is no encryption for the udp packets.
 If you are on a dangerous/untrusted network, please consider using rtinfo over securized tunnel or trusted network.
 
-rtinfod sends data in json format, grab it with HTTP GET request to /json on the rtinfod remote socket.
+`rtinfod` sends data in json format, grab it with HTTP GET request to /json on the rtinfod remote socket.
 
 Note: there is no real web server behind `rtinfod`, don't try to do anything else than `GET /json`
 
@@ -42,4 +36,8 @@ Note: there is no real web server behind `rtinfod`, don't try to do anything els
 Feel free to send any pull requests to improve this project
 
 # Contributors
-Thanks to: @nado, @bendardenne, @wget, @zaibon
+Thanks to:
+[@nado](https://github.com/nado),
+[@bendardenne](https://github.com/bendardenne),
+[@wget](https://github.com/wget),
+[@zaibon](https://github.com/zaibon)
