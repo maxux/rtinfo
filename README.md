@@ -1,5 +1,6 @@
 # rtinfo
-rtinfo is a collection of tools to centralize realtime system monitoring
+rtinfo is a lightweight collection of tools to centralize realtime system monitoring, using low bandwidth
+small footprint and small amount of dependencies
 
 ## Contents
 - `rtinfo-client`: remote udp client (using librtinfo to collects data)
@@ -11,10 +12,11 @@ For a better html version, please check [maxux/rtinfo-dashboard](https://github.
 
 # Dependencies
 
-- `rtinfo-client`: depends on `librtinfo`
+- `rtinfo-client`: depends on `librtinfo` (optional runtime dependency: `hddtemp`)
 - `rtinfod`: depends on `librtinfo` and `jansson`
 - `rtinfo-ncurses`: depends on `librtinfo` (compile-time), `jansson` and `libncurses`
 
+Note:
 - `librtinfo` can be found here: [maxux/librtinfo](https://github.com/maxux/librtinfo)
 
 # How to use it
