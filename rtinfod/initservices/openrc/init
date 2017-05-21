@@ -1,0 +1,16 @@
+#!/sbin/openrc-run
+
+pidfile="/var/run/rtinfod.pid"
+command="__EXECPATH__"
+
+start() {
+	ebegin "Starting rtinfod"
+	start-stop-daemon --start --background --pidfile "${pidfile}" --make-pidfile --exec "${command}" -- ${RTINFOD_OPTS}
+	eend $?
+}
+
+stop() {
+	ebegin "Stopping rtinfod"
+	start-stop-daemon --stop --quiet --pidfile "${pidfile}"
+	eend $?
+}

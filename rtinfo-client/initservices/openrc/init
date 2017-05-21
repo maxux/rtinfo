@@ -1,0 +1,22 @@
+#!/sbin/openrc-run
+
+pidfile="/var/run/rtinfo-client.pid"
+command="__EXECPATH__"
+
+depend() {
+	if [ "${HDDTEMP}" = "YES" ]; then
+		need hddtemp
+	fi
+}
+
+start() {
+	ebegin "Starting rtinfo-client"
+	start-stop-daemon --start --background --pidfile "${pidfile}" --make-pidfile --exec "${command}" -- ${RTINFOCLIENT_OPTS}
+	eend $?
+}
+
+stop() {
+	ebegin "Stopping rtinfo-client"
+	start-stop-daemon --stop --quiet --pidfile "${pidfile}"
+	eend $?
+}

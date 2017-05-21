@@ -1,0 +1,2 @@
+# Example of options for rtinfod
+#RTINFOD_OPTS="--remote-listen 127.0.0.1 --client-listen 10.0.0.1"
