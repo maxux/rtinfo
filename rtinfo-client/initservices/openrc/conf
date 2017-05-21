@@ -1,0 +1,5 @@
+# Example of options for rtinfo-client
+#RTINFOCLIENT_OPTS="--disk sd --host 127.0.0.1 --port 9930 --interval 1000"
+#
+# Uncomment the line below to pull hddtemp service as a dependency of rtinfo-client
+#HDDTEMP="YES"
