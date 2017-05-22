@@ -352,14 +352,20 @@ void print_client_summary(client_data_t *client) {
 	/* Print remote battery status */
 	separe(root_window);
 	if(client->summary.battery_load != -1) {
+		batload = (uint8_t) client->summary.battery_load;
+
+		/* Fix battery load when kernel set it to upper 100% value */
+		if(batload > 100)
+			batload = 100;
+
 		if(client->summary.battery_status != BATTERY_CHARGING) {
-			if(client->summary.battery_load < battery_limit[0])
+			if(batload < battery_limit[0])
 				wattrset(root_window, LEVEL_HIGH);
-				
-			else if(client->summary.battery_load < battery_limit[1])
+
+			else if(batload < battery_limit[1])
 				wattrset(root_window, LEVEL_WARN);
-			
-			else if(client->summary.battery_load < battery_limit[2])
+
+			else if(batload < battery_limit[2])
 				wattrset(root_window, LEVEL_ACTIVE);
 			
 			else wattrset(root_window, LEVEL_COLD);
@@ -367,8 +373,8 @@ void print_client_summary(client_data_t *client) {
 		} else wattrset(root_window, RATE_LOW);
 		
 		if(client->summary.battery_status < sizeof(battery_picto))
-			wprintw(root_window, " %c%3d%%%  ", battery_picto[client->summary.battery_status], client->summary.battery_load);
-			
+			wprintw(root_window, " %c%3d%%%  ", battery_picto[client->summary.battery_status], batload);
+
 		else wprintw(root_window, " Err.  ");
 		
 	} else {
