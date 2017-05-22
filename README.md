@@ -10,6 +10,10 @@ small footprint and small amount of dependencies
 
 For a better html version, please check [maxux/rtinfo-dashboard](https://github.com/maxux/rtinfo-dashboard)
 
+# Demonstration
+
+Please take a look at this gallery to show rtinfo displays: [http://imgur.com/a/K544C](http://imgur.com/a/K544C)
+
 # Dependencies
 
 - `rtinfo-client`: depends on `librtinfo` (optional runtime dependency: `hddtemp`)
