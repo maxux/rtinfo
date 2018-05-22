@@ -56,8 +56,8 @@ void *init_input(void *data) {
 		new[i]->port = root->port;
 		
 		bzero(&new[i]->si_me, sizeof(new[i]->si_me));
-		verbose("[+] input: binding to <%s>\n", __bind_input[i]);
-		
+		verbose("[+] input: binding to [%s], port: %d\n", __bind_input[i], root->port);
+
 		new[i]->si_me.sin_family      = AF_INET;
 		new[i]->si_me.sin_port        = htons(root->port);
 		new[i]->si_me.sin_addr.s_addr = inet_addr(__bind_input[i]);

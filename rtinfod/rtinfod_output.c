@@ -70,9 +70,9 @@ void *init_output(void *data) {
 			diep("[-] input: malloc");
 		
 		new[i]->port = root->port;
-		
-		verbose("[+] output: binding to <%s>\n", __bind_output[i]);
-		
+
+		verbose("[+] output: binding to [%s], port: %d\n", __bind_output[i], root->port);
+
 		new[i]->addr_listen.sin_family = AF_INET;
 		new[i]->addr_listen.sin_port   = htons(root->port);		
 		
