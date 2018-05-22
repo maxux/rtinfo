@@ -35,6 +35,7 @@ static struct option long_options[] = {
 	{"interval", required_argument, 0, 'i'},
 	{"disk",     required_argument, 0, 'k'},
 	{"daemon",   no_argument,       0, 'd'},
+	{"help",     no_argument,       0, 'H'},
 	{0, 0, 0, 0}
 };
 
@@ -46,13 +47,14 @@ void diep(char *str) {
 void print_usage(char *app) {
 	(void) app;
 
-	printf("rtinfo-client (v%.3f) command line", CLIENT_VERSION);
+	printf("rtinfo-client (v%.3f) command line\n\n", CLIENT_VERSION);
 
 	printf(" --host <host>      specify remote daemon host (default: %s)\n", DEFAULT_HOST);
 	printf(" --port <port>      specify remote daemon port (default: %d)\n", DEFAULT_PORT);
 	printf(" --interval <msec>  interval between two measure (default is 1000 (1s))\n");
 	printf(" --disk <prefix>    filter disk prefix (eg: 'sd' will match sda, sdb, ...)\n");
 	printf(" --daemon           run the client in background\n");
+	printf(" --help             shows this message\n");
 
 	exit(EXIT_FAILURE);
 }
@@ -110,6 +112,7 @@ int main(int argc, char *argv[]) {
 
 			/* unrecognized option */
 			case '?':
+			case 'H':
 				print_usage(argv[0]);
 				return 1;
 			break;
