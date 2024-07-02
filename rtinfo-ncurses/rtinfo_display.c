@@ -157,7 +157,8 @@ void display_clrerror() {
 }
 
 void separe(WINDOW *win) {
-	int attrs, x, y;
+	attr_t attrs;
+	int x, y;
 	short pair;
 
 	/* Saving current state */
@@ -266,7 +267,7 @@ void print_client_summary(client_data_t *client) {
 
 	else wattrset(root_window, LEVEL_COLD);
 
-	wprintw(root_window, " %3d%%/% 3d ", client->summary.cpu_usage, client->summary.cpu_count);
+	wprintw(root_window, " %3ld%%/%3ld ", client->summary.cpu_usage, client->summary.cpu_count);
 	wattrset(root_window, COLOR_PAIR(1));
 
 
@@ -373,7 +374,7 @@ void print_client_summary(client_data_t *client) {
 		} else wattrset(root_window, RATE_LOW);
 
 		if(client->summary.battery_status < sizeof(battery_picto))
-			wprintw(root_window, " %c%3d%%%  ", battery_picto[client->summary.battery_status], batload);
+			wprintw(root_window, " %c%3d%%  ", battery_picto[client->summary.battery_status], batload);
 
 		else wprintw(root_window, " Err.  ");
 
@@ -398,7 +399,7 @@ void print_client_summary(client_data_t *client) {
 
 		else wattrset(root_window, LEVEL_COLD);
 
-		wprintw(root_window, "% 3d", client->summary.sensors_cpu_avg);
+		wprintw(root_window, "% 3ld", client->summary.sensors_cpu_avg);
 
 	} else {
 		wattrset(root_window, LEVEL_COLD);
@@ -417,7 +418,7 @@ void print_client_summary(client_data_t *client) {
 
 		else wattrset(root_window, LEVEL_COLD);
 
-		wprintw(root_window, "%02d ", client->summary.sensors_hdd_avg);
+		wprintw(root_window, "%02ld ", client->summary.sensors_hdd_avg);
 	}
 
 	if(client->summary.sensors_hdd_peak > 0) {
@@ -429,7 +430,7 @@ void print_client_summary(client_data_t *client) {
 
 		else wattrset(root_window, LEVEL_COLD);
 
-		wprintw(root_window, "(%d) ", client->summary.sensors_hdd_peak);
+		wprintw(root_window, "(%ld) ", client->summary.sensors_hdd_peak);
 
 	} else {
 		wattrset(root_window, LEVEL_COLD);
@@ -588,7 +589,7 @@ void print_client_network(client_data_t *client, int units) {
 			wattrset(root_window, RATE_COLD);
 			wprintw(root_window, " Unknown");
 
-		} else wprintw(root_window, " %d Mbps", client->network[i].speed);
+		} else wprintw(root_window, " %ld Mbps", client->network[i].speed);
 
 		/* Notify that scroll is enabled */
 		if(network_displayed + 1 == network_maxdisplay)
