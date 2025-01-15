@@ -65,7 +65,7 @@ int networkside(char *server, int port, int interval, char **disks, unsigned int
 
 	netinfo_packed_disk_t *netdisk;
 	rtinfo_disk_legacy_t *diskdev;
-	rtinfo_temp_hdd_t hddtemp;
+	rtinfo_temp_hdd_t hddtemp, nvmetemp;
 
 	char *netbuild = NULL;
 	short netbuild_size = 0;
@@ -260,8 +260,19 @@ int networkside(char *server, int port, int interval, char **disks, unsigned int
 		if(!rtinfo_get_temp_hdd(&hddtemp))
 			return 1;
 
+		if(!rtinfo_get_temp_nvme(&nvmetemp))
+			return 1;
+
 		packed_cast->temp_hdd.peak = hddtemp.peak;
 		packed_cast->temp_hdd.hdd_average = hddtemp.hdd_average;
+
+		if(nvmetemp.peak > 0 && nvmetemp.hdd_average > 0) {
+			packed_cast->temp_hdd.peak += nvmetemp.peak;
+			packed_cast->temp_hdd.hdd_average += nvmetemp.hdd_average;
+
+			packed_cast->temp_hdd.peak /= 2;
+			packed_cast->temp_hdd.hdd_average /= 2;
+		}
 
 		/* Reading Time Info */
 		time((time_t*) &packed_cast->timestamp);
