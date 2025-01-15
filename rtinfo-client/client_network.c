@@ -215,6 +215,7 @@ int networkside(char *server, int port, int interval, char **disks, unsigned int
 		rtinfo_get_disk(truedisks[i]);
 
 	rtinfo_init_temp_hdd(&hddtemp);
+	rtinfo_init_temp_hdd(&nvmetemp);
 
 	/* Working */
 	while(1) {
