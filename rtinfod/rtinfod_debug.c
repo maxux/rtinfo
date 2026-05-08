@@ -159,7 +159,8 @@ void debug_input(unsigned char *buffer, unsigned int recvsize) {
 		
 		printf("[ ] Uptime     : %u\n", be32toh(cast->uptime.uptime));
 		printf("[ ] Timestamp  : %u\n\n", be32toh(cast->timestamp));
-		
+		printf("[ ] RAPL PKG   : %u\n\n", be32toh(cast->rapl.pkg));
+
 	} else if(be32toh(cast->options) & USE_DISK) {
 		disk = (netinfo_packed_disk_t *) cast;
 		
