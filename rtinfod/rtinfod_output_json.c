@@ -241,7 +241,7 @@ char *output_json() {
 	json_object_set_new(root, "servertime", json_integer(time(NULL)));
 
 	/* Saving json data */
-	output = json_dumps(root, JSON_INDENT(2));
+	output = json_dumps(root, JSON_COMPACT);
 
 	/* Clearing */
 	json_decref(root);

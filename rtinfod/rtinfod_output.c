@@ -166,8 +166,9 @@ void *thread_output_data(void *thread) {
 			/* Data */
 			send(thread_data->sockfd, json, length, 0);
 			free(json);
-			
-			break;
+
+			memset(buffer, 0x00, sizeof(buffer));
+			length = 0;
 		}
 	}
 		
