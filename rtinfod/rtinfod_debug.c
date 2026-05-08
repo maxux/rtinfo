@@ -122,8 +122,8 @@ void debug_input(unsigned char *buffer, unsigned int recvsize) {
 					sizeof(rtinfo_network_legacy_t)
 				);
 		}
-		
-	} else if(be32toh(cast->options & USE_SUMMARY)) {
+
+	} else if(be32toh(cast->options) & USE_SUMMARY) {
 		printf("[+] Summary packet data:\n");
 		
 		printf("[ ] CPU Count  : %u\n", be32toh(cast->nbcpu));
