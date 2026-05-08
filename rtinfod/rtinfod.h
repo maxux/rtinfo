@@ -3,9 +3,9 @@
 	
 	#define BUFFER_SIZE             65535   /* should not exceed udp limit */
 	#define REQUIRED_LIB_VERSION    4.00
-	
-	#define SERVER_VERSION          0.11
-	
+
+	#define SERVER_VERSION          1.01
+
 	#define MAX_NETWORK_BIND        64
 
 	typedef struct client_t {

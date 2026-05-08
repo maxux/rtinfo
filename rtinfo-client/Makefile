@@ -3,7 +3,7 @@ include ../config.mk
 EXEC = rtinfo-client
 PREFIX = /usr/local/
 CFLAGS += -W -Wall -O2 -pipe -ansi -std=gnu99
-LDFLAGS += -lrtinfo
+LDFLAGS += -lrtinfo -lm
 
 SRC=$(wildcard *.c)
 OBJ=$(SRC:.c=.o)

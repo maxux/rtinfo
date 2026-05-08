@@ -76,8 +76,9 @@ void convert_packed(netinfo_packed_t *packed) {
 	
 	packed->temp_hdd.peak        = be16toh(packed->temp_hdd.peak);
 	packed->temp_hdd.hdd_average = be16toh(packed->temp_hdd.hdd_average);
-	
-	packed->timestamp = be32toh(packed->timestamp);	
+
+	packed->timestamp = be32toh(packed->timestamp);
+	packed->rapl.pkg  = be32toh(packed->rapl.pkg);
 }
 
 void convert_packed_net(rtinfo_network_legacy_t *net) {

@@ -55,6 +55,9 @@ int networkside(char *server, int port, int interval, char **disks, unsigned int
 	rtinfo_cpu_t *cpu;
 	short cpu_size;
 
+	rtinfo_rapl_t *rapl;
+	size_t rapl_pkg_mw = 0;
+
 	rtinfo_network_t *truenet;
 	short legacy_size;
 
@@ -137,6 +140,8 @@ int networkside(char *server, int port, int interval, char **disks, unsigned int
 
 	printf("[ ] packedbuild_size       : %u bytes\n", packedbuild_size);
 
+	rapl = rtinfo_init_rapl_intel();
+
 	/* Casting to avoid shit code */
 	packed_cast = (netinfo_packed_t*) packedbuild;
 
@@ -210,6 +215,7 @@ int networkside(char *server, int port, int interval, char **disks, unsigned int
 	/* Pre-reading data */
 	rtinfo_get_cpu(cpu);
 	rtinfo_get_network(truenet);
+	rtinfo_get_rapl_intel(rapl);
 
 	for(i = 0; i < sdisks; i++)
 		rtinfo_get_disk(truedisks[i]);
@@ -225,6 +231,18 @@ int networkside(char *server, int port, int interval, char **disks, unsigned int
 		/* Reading CPU */
 		rtinfo_get_cpu(cpu);
 		rtinfo_mk_cpu_usage(cpu);
+
+		/* Reading RAPL */
+		rtinfo_get_rapl_intel(rapl);
+		rtinfo_mk_rapl_usage(rapl);
+
+		rapl_pkg_mw = 0;
+
+		for(i = 0; rapl && i < rapl->zones; i++) {
+			rapl_pkg_mw += (rapl->pkgs[i] * 1000);
+		}
+
+		packed_cast->rapl.pkg = rapl_pkg_mw;
 
 		for(i = 0; i < cpu->nbcpu; i++)
 			packed_cast->cpu[i].usage = cpu->dev[i].usage;

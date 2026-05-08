@@ -112,8 +112,9 @@ int netinfo_send_packed(int sockfd, netinfo_packed_t *packed, size_t size, const
 	packed->temp_cpu.cpu_average = htobe16(packed->temp_cpu.cpu_average);
 	
 	packed->temp_hdd.peak        = htobe16(packed->temp_hdd.peak);
-	packed->temp_hdd.hdd_average = htobe16(packed->temp_hdd.hdd_average);	
-	
+	packed->temp_hdd.hdd_average = htobe16(packed->temp_hdd.hdd_average);
+
+	packed->rapl.pkg = htobe32(packed->rapl.pkg);
 	packed->timestamp = htobe32(packed->timestamp);
 	
 	/* printf("[+] Sending packed (size: %u)\n", size); */

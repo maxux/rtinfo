@@ -41,7 +41,12 @@
 		uint16_t hdd_average;
 		
 	} __attribute__ ((packed)) rtinfo_temp_hdd_legacy_t;
-	
+
+	typedef struct rtinfo_rapl_simple_t {
+		uint32_t pkg;            /* Total CPU Power in mW */
+
+	} __attribute__ ((packed)) rtinfo_rapl_simple_t;
+
 	typedef struct netinfo_packed_t {
 		/* Common Packed/Net */
 		netinfo_options_t options;
@@ -58,6 +63,7 @@
 		rtinfo_temp_hdd_legacy_t temp_hdd;
 		rtinfo_uptime_t uptime;
 		uint64_t timestamp;
+		rtinfo_rapl_simple_t rapl;
 		rtinfo_cpu_legacy_t cpu[];
 		
 	} __attribute__ ((packed)) netinfo_packed_t;

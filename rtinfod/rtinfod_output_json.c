@@ -128,7 +128,16 @@ static json_t *json_node_temp_cpu(rtinfo_temp_cpu_t *temp) {
 	node = json_object();
 	json_object_set_new(node, "average", json_integer(temp->cpu_average));
 	json_object_set_new(node, "critical", json_integer(temp->critical));
-	
+
+	return node;
+}
+
+static json_t *json_node_rapl(uint32_t pkgmw) {
+	json_t *node;
+
+	node = json_object();
+	json_object_set_new(node, "pkg", json_integer(pkgmw));
+
 	return node;
 }
 
@@ -210,7 +219,8 @@ char *output_json() {
 		
 		json_object_set_new(this, "uptime", json_integer(client->summary->uptime.uptime));
 		json_object_set_new(this, "time", json_integer(client->summary->timestamp));
-		
+		json_object_set_new(this, "rapl", json_node_rapl(client->summary->rapl.pkg));
+
 		/* Network part */
 		json_object_set_new(root, "network", json_node_network(client->net->net, client->net->nbiface));
 		
