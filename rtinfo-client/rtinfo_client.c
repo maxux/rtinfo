@@ -62,11 +62,11 @@ void print_usage(char *app) {
 int main(int argc, char *argv[]) {
 	int i, option_index = 0;
 
-	char *server = "localhost";
+	char *server = strdup("localhost");
 	int port = DEFAULT_PORT;
 	int interval = 1000;
 	char **disks = NULL;
-	int sdisks = 0;
+	size_t sdisks = 0;
 
 	int daemon = 0;
 	pid_t process = 0;
@@ -87,6 +87,7 @@ int main(int argc, char *argv[]) {
 
 		switch(i) {
 			case 'h':
+				free(server);
 				server = strdup(optarg);
 				break;
 
@@ -137,8 +138,13 @@ int main(int argc, char *argv[]) {
 		close(STDERR_FILENO);
 	}
 
-	for(i = 0; i < sdisks; i++)
-		printf("Disk %d: %s\n", i, disks[i]);
+	int ret = networkside(server, port, interval, disks, sdisks);
+	free(server);
 
-	return networkside(server, port, interval, disks, sdisks);
+	for(size_t i = 0; i < sdisks; i++)
+		free(disks[i]);
+
+	free(disks);
+
+	return ret;
 }

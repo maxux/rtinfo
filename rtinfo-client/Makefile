@@ -2,8 +2,8 @@ include ../config.mk
 
 EXEC = rtinfo-client
 PREFIX = /usr/local/
-CFLAGS += -W -Wall -O2 -pipe -ansi -std=gnu99
-LDFLAGS += -lrtinfo -lm
+CFLAGS += -g -W -Wall -O2 -pipe -ansi -std=gnu99 -I../../librtinfo-testing/linux
+LDFLAGS += -lm -lmsgpack-c ../../librtinfo-testing/linux/librtinfo.a
 
 SRC=$(wildcard *.c)
 OBJ=$(SRC:.c=.o)
@@ -11,10 +11,6 @@ OBJ=$(SRC:.c=.o)
 ifdef STATIC
 	CFLAGS += -march=nocona
 	LDFLAGS += -static
-endif
-
-ifneq ($(wildcard /usr/include/endian.h),)
-	CFLAGS += -DHAVE_ENDIAN_H
 endif
 
 all: $(EXEC)
