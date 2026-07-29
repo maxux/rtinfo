@@ -1,6 +1,4 @@
+*.o
 rtinfod/rtinfod
-rtinfod/*.o
 rtinfo-client/rtinfo-client
-rtinfo-client/*.o
 rtinfo-ncurses/rtinfo-ncurses
-rtinfo-ncurses/*.o

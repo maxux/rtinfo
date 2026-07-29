@@ -3,6 +3,6 @@ OPENRC = NO
 
 PREFIX = /usr/local/
 
-CFLAGS  += -W -Wall -O2 -pipe -ansi -std=gnu99 -g
+CFLAGS  += -W -Wall -O2 -pipe -ansi -std=gnu99 -g -I../librtinfo/linux
 
 CC = gcc

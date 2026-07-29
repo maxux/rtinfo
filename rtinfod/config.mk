@@ -3,4 +3,4 @@ include ../config.mk
 EXEC = rtinfod
 
 CFLAGS  += -pthread
-LDFLAGS += -lrtinfo -pthread -lm -ljansson
+LDFLAGS += ../../librtinfo-testing/linux/librtinfo.a -pthread -lm -ljansson -lmsgpack-c
