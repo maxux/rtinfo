@@ -25,13 +25,12 @@
 #include <arpa/inet.h>
 #include <jansson.h>
 #include <rtinfo.h>
-#include "../rtinfo-common/socket.h"
 #include "rtinfod.h"
-#include "rtinfod_network.h"
 #include "rtinfod_output_json.h"
 
 char *__avgvalue[] = {"1", "5", "15"};
 
+#if 0
 static json_t *json_node_network(rtinfo_network_legacy_t *net, uint32_t nbiface) {
 	rtinfo_network_legacy_t *read = net;
 	char strip[16], ifname[64];
@@ -248,3 +247,4 @@ char *output_json() {
 
 	return output;
 }
+#endif

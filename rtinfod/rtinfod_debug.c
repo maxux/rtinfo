@@ -29,11 +29,12 @@
 #include <sys/types.h>
 #include <ctype.h>
 #include <inttypes.h>
+
+#include <msgpack.h>
+
 #include "rtinfod.h"
-#include "../rtinfo-common/socket.h"
 #include "rtinfod_input.h"
 #include "rtinfod_debug.h"
-#include "rtinfod_network.h"
 
 void dump(unsigned char *data, unsigned int len) {
 	unsigned int i, j;
@@ -67,6 +68,11 @@ void dump(unsigned char *data, unsigned int len) {
 }
 
 void debug_input(unsigned char *buffer, unsigned int recvsize) {
+	dump(buffer, recvsize);
+
+
+
+#if 0
 	netinfo_packed_t *cast;
 	netinfo_packed_net_t *net;
 	netinfo_packed_disk_t *disk;
@@ -195,4 +201,5 @@ void debug_input(unsigned char *buffer, unsigned int recvsize) {
 				);
 		}
 	}
+#endif
 }

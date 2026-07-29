@@ -1,10 +1,13 @@
 #ifndef __RTINFODD_H
 	#define __RTINFODD_H
 
-	#define BUFFER_SIZE             65535   /* should not exceed udp limit */
-	#define REQUIRED_LIB_VERSION    4.00
+	#define INPUT_DEFAULT_PORT     9930
+	#define OUTPUT_DEFAULT_PORT    8089
 
-	#define SERVER_VERSION          1.01
+	#define BUFFER_SIZE             65535   /* should not exceed udp limit */
+	#define REQUIRED_LIB_VERSION    5.00
+
+	#define SERVER_VERSION          2.00
 
 	#define MAX_NETWORK_BIND        64
 
@@ -14,14 +17,10 @@
 
 		time_t lasttime;
 
-		struct netinfo_packed_t *summary;
-		size_t summary_length;
-
-		struct netinfo_packed_net_t *net;
-		size_t net_length;
-
-		struct netinfo_packed_disk_t *disk;
-		size_t disk_length;
+		// rtinfo_netframe_t frame;
+		uint8_t *buffer;
+		size_t frame_size;
+		size_t frame_allocated;
 
 		struct client_t *next;
 

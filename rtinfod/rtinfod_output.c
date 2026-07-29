@@ -35,11 +35,9 @@
 #include <signal.h>
 #include <netdb.h>
 #include <sys/wait.h>
-#include "../rtinfo-common/socket.h"
 #include "rtinfod.h"
 #include "rtinfod_stack.h"
 #include "rtinfod_ip.h"
-#include "rtinfod_network.h"
 #include "rtinfod_input.h"
 #include "rtinfod_debug.h"
 #include "rtinfod_output.h"
@@ -152,7 +150,7 @@ void *thread_output_data(void *thread) {
 			continue;
 
 		if(!strncmp(buffer + 5, "json", 4)) {
-			json = output_json();
+			json = ""; // output_json();
 
 			debug("[ ] output: thread %d: json output (%d bytes):\n", thread_data->sockfd, length);
 			debug("%s\n", json);
